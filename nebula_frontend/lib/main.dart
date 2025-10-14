@@ -24,24 +24,24 @@ class _NebulaAppState extends State<NebulaApp> {
     final theme = ThemeData(
       brightness: _darkMode ? Brightness.dark : Brightness.light,
       useMaterial3: true,
-      colorSchemeSeed: _darkMode ? const Color(0xFF33A0FF) : const Color(0xFF0044AA),
+      colorSchemeSeed: _darkMode
+          ? const Color(0xFF33A0FF)
+          : const Color(0xFF0044AA),
       fontFamily: 'Roboto',
     );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Nebula by OmniCom',
+      title: 'Nebula by OMNICOM',
       theme: theme,
+      initialRoute: '/login', // always start at login
       routes: {
-        '/': (context) => LoginPage(
-              onToggleTheme: _toggleTheme,
-              darkMode: _darkMode,
-            ),
-        '/main': (context) => const MainPage(),
-        '/register': (context) => RegisterPage(
-              onToggleTheme: _toggleTheme,
-              darkMode: _darkMode,
-            ),
+        '/login': (context) =>
+            LoginPage(onToggleTheme: _toggleTheme, darkMode: _darkMode),
+        '/main': (context) =>
+            MainPage(onToggleTheme: _toggleTheme, darkMode: _darkMode),
+        '/register': (context) =>
+            RegisterPage(onToggleTheme: _toggleTheme, darkMode: _darkMode),
       },
     );
   }
