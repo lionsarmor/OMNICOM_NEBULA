@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:17
+    container_name: omnicom-db
+    restart: always
+    environment:
+      POSTGRES_USER: roddy
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: omnicom
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    container_name: omnicom-backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      PORT: 4000
+      JWT_SECRET: supersecret
+      DATABASE_URL: postgres://roddy:password@db:5432/omnicom
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+    command: ["npm", "run", "dev"]
+
+volumes:
+  pgdata:
