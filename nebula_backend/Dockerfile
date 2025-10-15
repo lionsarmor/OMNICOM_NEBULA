@@ -1,18 +1,17 @@
-# === OmniCom Backend Dockerfile ===
+# === OMNICOM Nebula Backend ===
 FROM node:20-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files and install deps
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
-# Copy source code
 COPY . .
 
-# Expose API port
+ENV PORT=4000
 EXPOSE 4000
 
-# Start app
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s \
+  CMD curl -f http://localhost:4000/api/health || exit 1
+
 CMD ["node", "src/index.js"]

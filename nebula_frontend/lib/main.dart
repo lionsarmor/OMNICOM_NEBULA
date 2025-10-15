@@ -34,7 +34,7 @@ class _NebulaAppState extends State<NebulaApp> {
       debugShowCheckedModeBanner: false,
       title: 'Nebula by OMNICOM',
       theme: theme,
-      initialRoute: '/login', // always start at login
+      initialRoute: '/login',
       routes: {
         '/login': (context) =>
             LoginPage(onToggleTheme: _toggleTheme, darkMode: _darkMode),

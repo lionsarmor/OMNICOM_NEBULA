@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api.dart';
 import '../widgets/nebula_login_animation.dart';
 
@@ -27,6 +28,11 @@ class _LoginPageState extends State<LoginPage> {
   bool _errorMode = false;
   String? _status;
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
   Future<void> _login() async {
     setState(() {
       _status = "Synchronizing with Nebula Core…";
@@ -34,18 +40,62 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await ApiService.login(_userCtrl.text, _passCtrl.text);
-      // ✅ Successful login
-      setState(() {
-        _showAnim = true;
-        _errorMode = false;
-      });
+      final res = await ApiService.login(
+        _userCtrl.text.trim(),
+        _passCtrl.text.trim(),
+      );
+
+      if (res.containsKey('error')) {
+        // ❌ backend responded with error
+        setState(() {
+          _showAnim = true;
+          _errorMode = true;
+          _loading = false;
+          _status = "❌ ${res['error']}";
+        });
+        _audio.play(AssetSource('sfx/access_denied.wav'));
+        return;
+      }
+
+      if (res.containsKey('token')) {
+        // ✅ Save JWT token locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', res['token']);
+
+        setState(() {
+          _status = "Access channel locked. Initiating uplink…";
+          _showAnim = true;
+          _errorMode = false;
+          _loading = false;
+        });
+
+        // Timed sound sequence
+        Future.delayed(const Duration(milliseconds: 250), () {
+          _audio.play(AssetSource('sfx/laser_charge.wav'));
+        });
+        Future.delayed(const Duration(milliseconds: 900), () {
+          _audio.play(AssetSource('sfx/laser_fire.wav'));
+        });
+        Future.delayed(const Duration(milliseconds: 2200), () {
+          _audio.play(AssetSource('sfx/impact.wav'));
+        });
+      } else {
+        setState(() {
+          _showAnim = true;
+          _errorMode = true;
+          _loading = false;
+          _status = "❌ Authentication failed.";
+        });
+        _audio.play(AssetSource('sfx/access_denied.wav'));
+      }
     } catch (e) {
-      // ❌ Failed login
       setState(() {
         _showAnim = true;
         _errorMode = true;
+        _loading = false;
+        _status = "❌ Network error: $e";
       });
+      _audio.play(AssetSource('sfx/access_denied.wav'));
     }
   }
 
@@ -65,7 +115,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final isDark = widget.darkMode;
     final bgColor = isDark ? const Color(0xFF0C0F1A) : const Color(0xFFEAF3FF);
-    final panelColor = isDark ? const Color(0xFF171C28) : const Color(0xFFE0E6F2);
+    final panelColor = isDark
+        ? const Color(0xFF171C28)
+        : const Color(0xFFE0E6F2);
     final textColor = isDark ? Colors.white : Colors.black87;
 
     final headerGradient = isDark
@@ -77,13 +129,17 @@ class _LoginPageState extends State<LoginPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Header
+          // === HEADER ===
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: headerGradient,
               boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1)),
+                BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
               ],
             ),
             child: Row(
@@ -102,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   children: [
                     Text(
-                      "by OmniCom",
+                      "by OMNICOM",
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 12,
@@ -114,10 +170,14 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(width: 12),
                     IconButton(
                       icon: Icon(
-                        isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
+                        isDark
+                            ? Icons.wb_sunny_rounded
+                            : Icons.dark_mode_rounded,
                         color: Colors.white,
                       ),
-                      tooltip: isDark ? "Switch to Light Mode" : "Switch to Dark Mode",
+                      tooltip: isDark
+                          ? "Switch to Light Mode"
+                          : "Switch to Dark Mode",
                       onPressed: widget.onToggleTheme,
                     ),
                   ],
@@ -126,178 +186,41 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // Main content
+          // === BODY ===
           Expanded(
             child: Center(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
                 child: _showAnim
-                    ? Container(
+                    ? NebulaLoginAnimation(
                         key: const ValueKey('anim'),
-                        width: 520,
-                        height: 400,
-                        decoration: BoxDecoration(
-                          color: panelColor,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.blueGrey.shade800
-                                : Colors.blueGrey.shade200,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark
-                                  ? Colors.blue.withOpacity(0.08)
-                                  : Colors.black12,
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: NebulaLoginAnimation(
-                            errorMode: _errorMode,
-                            onComplete: () async {
-                              await _playSoundSequence(success: true);
-                              _goMain();
-                            },
-                            onErrorEnd: () async {
-                              await _playSoundSequence(success: false);
-                              setState(() {
-                                _showAnim = false;
-                                _loading = false;
-                                _status = "❌ Authentication failed. Try again.";
-                              });
-                            },
-                            onPhaseChange: (phase) => _handlePhaseSound(phase),
-                          ),
-                        ),
+                        errorMode: _errorMode,
+                        onComplete: _goMain,
+                        onErrorEnd: () async {
+                          setState(() {
+                            _showAnim = false;
+                            _loading = false;
+                            _status = "❌ Authentication failed. Try again.";
+                          });
+                        },
                       )
-                    : Container(
-                        key: const ValueKey('form'),
-                        width: 440,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: panelColor,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.blueGrey.shade800
-                                : Colors.blueGrey.shade200,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark
-                                  ? Colors.blue.withOpacity(0.1)
-                                  : Colors.grey.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                gradient: headerGradient,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: const Text(
-                                "SIGN ON TO NEBULA",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 22),
-                            TextField(
-                              controller: _userCtrl,
-                              style: TextStyle(color: textColor),
-                              decoration: InputDecoration(
-                                labelText: "Screen Name",
-                                labelStyle:
-                                    TextStyle(color: textColor.withOpacity(0.9)),
-                                border: const OutlineInputBorder(),
-                                filled: true,
-                                fillColor:
-                                    isDark ? const Color(0xFF23283B) : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _passCtrl,
-                              obscureText: true,
-                              style: TextStyle(color: textColor),
-                              decoration: InputDecoration(
-                                labelText: "Password",
-                                labelStyle:
-                                    TextStyle(color: textColor.withOpacity(0.9)),
-                                border: const OutlineInputBorder(),
-                                filled: true,
-                                fillColor:
-                                    isDark ? const Color(0xFF23283B) : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark
-                                    ? const Color(0xFF0066CC)
-                                    : const Color(0xFFFFD700),
-                                foregroundColor:
-                                    isDark ? Colors.white : Colors.black,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 50, vertical: 14),
-                                textStyle: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                              onPressed: _loading ? null : _login,
-                              child: const Text("Sign On"),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _status ?? "Awaiting input…",
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: textColor.withOpacity(0.7)),
-                            ),
-                            const SizedBox(height: 10),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pushNamed(context, '/register'),
-                              child: Text(
-                                "Create New Nebula ID",
-                                style: TextStyle(
-                                    color: isDark
-                                        ? Colors.blue[200]
-                                        : Colors.blue[800]),
-                              ),
-                            ),
-                          ],
-                        ),
+                    : _buildLoginForm(
+                        isDark,
+                        panelColor,
+                        textColor,
+                        headerGradient,
                       ),
               ),
             ),
           ),
 
-          // Footer
+          // === FOOTER ===
           Padding(
             padding: const EdgeInsets.only(bottom: 12, top: 6),
             child: Column(
               children: [
                 Text(
-                  "© 2186–2025 OmniCom Networks  •  NEBULA Communication Suite",
+                  "© 2186–2025 OMNICOM Networks  •  NEBULA Communication Suite",
                   style: TextStyle(
                     color: isDark ? Colors.grey[500] : Colors.grey[700],
                     fontSize: 12,
@@ -323,30 +246,118 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 🎵 Handle sound phases
-  void _handlePhaseSound(String phase) async {
-    switch (phase) {
-      case 'charge':
-        await _audio.play(AssetSource('sfx/laser_charge.wav'));
-        break;
-      case 'fire':
-        await _audio.play(AssetSource('sfx/laser_fire.wav'));
-        break;
-      case 'impact':
-        await _audio.play(AssetSource('sfx/impact.wav'));
-        break;
-      case 'error':
-        await _audio.play(AssetSource('sfx/access_denied.wav'));
-        break;
-    }
-  }
-
-  // 🎵 Sequence for completion or error
-  Future<void> _playSoundSequence({required bool success}) async {
-    if (success) {
-      await _audio.play(AssetSource('sfx/impact.wav'));
-    } else {
-      await _audio.play(AssetSource('sfx/access_denied.wav'));
-    }
+  Widget _buildLoginForm(
+    bool isDark,
+    Color panelColor,
+    Color textColor,
+    LinearGradient headerGradient,
+  ) {
+    return Container(
+      key: const ValueKey('form'),
+      width: 440,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: panelColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade200,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.blue.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              gradient: headerGradient,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: const Text(
+              "SIGN ON TO NEBULA",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          TextField(
+            controller: _userCtrl,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              labelText: "Screen Name",
+              labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
+              border: const OutlineInputBorder(),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _passCtrl,
+            obscureText: true,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              labelText: "Password",
+              labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
+              border: const OutlineInputBorder(),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark
+                  ? const Color(0xFF0066CC)
+                  : const Color(0xFFFFD700),
+              foregroundColor: isDark ? Colors.white : Colors.black,
+              elevation: 3,
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
+            ),
+            onPressed: _loading ? null : _login,
+            child: _loading
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2.2),
+                  )
+                : const Text("Sign On"),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _status ?? "Awaiting input…",
+            style: TextStyle(fontSize: 14, color: textColor.withOpacity(0.7)),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: () => Navigator.pushNamed(context, '/register'),
+            child: Text(
+              "Create New Nebula ID",
+              style: TextStyle(
+                color: isDark ? Colors.blue[200] : Colors.blue[800],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

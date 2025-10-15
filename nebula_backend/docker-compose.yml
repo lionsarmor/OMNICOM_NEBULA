@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   db:
     image: postgres:17
@@ -22,13 +21,15 @@ services:
       - db
     environment:
       PORT: 4000
-      JWT_SECRET: supersecret
+      NODE_ENV: production
       DATABASE_URL: postgres://roddy:password@db:5432/omnicom
+      JWT_SECRET: supersecret
+      JWT_EXPIRES: 2h
+      CORS_ORIGIN: "*"
     ports:
       - "4000:4000"
     volumes:
       - .:/app
-    command: ["npm", "run", "dev"]
 
 volumes:
   pgdata:

@@ -13,6 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.5.0
   audioplayers: ^6.5.1   # 🎧 latest stable audio package
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:
