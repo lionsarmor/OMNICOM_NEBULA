@@ -1,35 +1,51 @@
+version: "3.9"
+
 services:
-  db:
+  nebula-db:
     image: postgres:17
-    container_name: omnicom-db
+    container_name: nebula-db
     restart: always
     environment:
-      POSTGRES_USER: roddy
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: omnicom
+      POSTGRES_USER: nebula
+      POSTGRES_PASSWORD: nebula123
+      POSTGRES_DB: nebula
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - nebula_pgdata:/var/lib/postgresql/data
+      # Optional schema load if you have ./sql/schema.sql
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     ports:
       - "5432:5432"
+    networks:
+      - omnicom-net
 
-  backend:
+  nebula-backend:
     build: .
-    container_name: omnicom-backend
+    container_name: nebula-backend
     restart: always
     depends_on:
-      - db
+      - nebula-db
     environment:
-      PORT: 4000
+      PORT: 4400               # ✅ backend listens on 4400 internally
       NODE_ENV: production
-      DATABASE_URL: postgres://roddy:password@db:5432/omnicom
-      JWT_SECRET: supersecret
+      DATABASE_URL: postgres://nebula:nebula123@nebula-db:5432/nebula
+      JWT_SECRET: nebula_secret
       JWT_EXPIRES: 2h
-      CORS_ORIGIN: "*"
+      CORS_ORIGIN: "*"         # allow all (or set to https://nebula.omnicom.online)
     ports:
-      - "4000:4000"
+      - "4400:4400"            # ✅ external:internal match now
     volumes:
       - .:/app
+    networks:
+      - omnicom-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4400/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
-  pgdata:
+  nebula_pgdata:
+
+networks:
+  omnicom-net:
+    external: true

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:4000/api';
+  static const String baseUrl = 'https://api.omnicom.online/api';
 
   static Future<Map<String, dynamic>> _handleResponse(http.Response res) async {
     if (res.statusCode >= 200 && res.statusCode < 300) {

@@ -1,0 +1,12 @@
+services:
+  frontend:
+    container_name: nebula-frontend
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run build && npx serve -s dist -l 5400"
+    volumes:
+      - .:/app
+    ports:
+      - "5400:5400"
+    environment:
+      NODE_ENV: production

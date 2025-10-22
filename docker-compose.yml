@@ -1,0 +1,77 @@
+version: "3.9"
+
+networks:
+  omnicom-net:
+    external: true
+
+volumes:
+  nebula_pgdata:
+
+services:
+  # =============================
+  # 🐘 PostgreSQL Database
+  # =============================
+  nebula-db:
+    image: postgres:17
+    container_name: nebula-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${NEBULA_DB_USER:-nebula}
+      POSTGRES_PASSWORD: ${NEBULA_DB_PASS:-nebula123}
+      POSTGRES_DB: ${NEBULA_DB_NAME:-nebula}
+    volumes:
+      - nebula_pgdata:/var/lib/postgresql/data
+      # Auto-load schema on first startup
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    networks:
+      - omnicom-net
+
+  # =============================
+  # 🚀 Nebula Backend (Node.js)
+  # =============================
+  nebula-backend:
+    build: ./nebula_backend
+    container_name: nebula-backend
+    restart: unless-stopped
+    depends_on:
+      - nebula-db
+    environment:
+      NODE_ENV: production
+      PORT: ${BACKEND_PORT:-4400}
+      DATABASE_URL: postgres://${NEBULA_DB_USER:-nebula}:${NEBULA_DB_PASS:-nebula123}@nebula-db:5432/${NEBULA_DB_NAME:-nebula}
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      JWT_EXPIRES: 2h
+      CORS_ORIGIN: "*"
+    ports:
+      - "${BACKEND_PORT:-4400}:${BACKEND_PORT:-4400}"
+    working_dir: /app
+    command: npm run start
+    volumes:
+      - ./nebula_backend:/app
+    networks:
+      - omnicom-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT:-4400}/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  # =============================
+  # 🌐 Nebula Frontend (Flutter Web)
+  # =============================
+  nebula-frontend:
+    container_name: nebula-frontend
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "npm install -g serve && serve -s build/web -l ${FRONTEND_PORT:-5173}"
+    volumes:
+      - ./nebula_frontend:/app
+    ports:
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
+    environment:
+      NODE_ENV: production
+    networks:
+      - omnicom-net
