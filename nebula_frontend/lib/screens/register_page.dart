@@ -76,7 +76,6 @@ class _RegisterPageState extends State<RegisterPage> {
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final panel = isDark ? AppColors.surfaceDark : Colors.white;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
-    final accent = isDark ? AppColors.accentDark : AppColors.primaryLight;
     final headerGradient = isDark
         ? AppColors.darkHeaderGradient
         : AppColors.lightHeaderGradient;
@@ -95,7 +94,7 @@ class _RegisterPageState extends State<RegisterPage> {
           IconButton(
             icon: Icon(
               isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
-              color: isDark ? AppColors.accentDark : AppColors.accentDark,
+              color: isDark ? AppColors.accentDark : AppColors.primaryLightDark,
             ),
             onPressed: widget.onToggleTheme,
           ),
@@ -113,7 +112,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             boxShadow: [
               BoxShadow(
-                color: accent.withOpacity(isDark ? 0.15 : 0.25),
+                color: AppColors.accentDark.withOpacity(isDark ? 0.15 : 0.25),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -160,11 +159,11 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
-              // ==== BUTTON ====
+              // ==== BUTTON (ALWAYS AOL YELLOW) ====
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
-                  foregroundColor: isDark ? Colors.black : Colors.white,
+                  backgroundColor: AppColors.accentDark,
+                  foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 50,
                     vertical: 14,
@@ -201,7 +200,10 @@ class _RegisterPageState extends State<RegisterPage> {
               // ==== BACK BUTTON ====
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Back to Sign On', style: TextStyle(color: accent)),
+                child: Text(
+                  'Back to Sign On',
+                  style: TextStyle(color: AppColors.primaryLight),
+                ),
               ),
             ],
           ),

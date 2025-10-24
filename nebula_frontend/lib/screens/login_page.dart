@@ -163,15 +163,11 @@ class _LoginPageState extends State<LoginPage> {
                     IconButton(
                       icon: Icon(
                         isDark
-                            ? Icons
-                                  .wb_sunny_rounded // ☀️ show sun when in dark mode
-                            : Icons
-                                  .dark_mode_rounded, // 🌙 show moon when in light mode
+                            ? Icons.wb_sunny_rounded
+                            : Icons.dark_mode_rounded,
                         color: isDark
-                            ? AppColors
-                                  .accentDark // neon yellow for sun in dark mode
-                            : AppColors
-                                  .accentDark, // deep navy for moon in light mode (visible)
+                            ? AppColors.accentDark
+                            : AppColors.primaryLightDark,
                       ),
                       tooltip: isDark
                           ? "Switch to Light Mode"
@@ -332,12 +328,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 20),
+
+          // ===== FIXED BUTTON COLOR (AOL YELLOW) =====
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isDark
-                  ? AppColors.accentDark
-                  : AppColors.primaryLight,
-              foregroundColor: isDark ? Colors.black : Colors.white,
+              backgroundColor: AppColors.accentDark, // 🟡 Always AOL yellow
+              foregroundColor: Colors.black, // black text on yellow
               elevation: 3,
               padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
               textStyle: const TextStyle(
@@ -365,7 +361,8 @@ class _LoginPageState extends State<LoginPage> {
             child: Text(
               "Create New Nebula ID",
               style: TextStyle(
-                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                color: AppColors.primaryLight,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
