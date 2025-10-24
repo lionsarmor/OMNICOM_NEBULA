@@ -72,8 +72,9 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.darkMode;
+
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final panel = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final panel = isDark ? AppColors.surfaceDark : Colors.white;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
     final accent = isDark ? AppColors.accentDark : AppColors.primaryLight;
     final headerGradient = isDark
@@ -86,12 +87,15 @@ class _RegisterPageState extends State<RegisterPage> {
         backgroundColor: isDark
             ? AppColors.surfaceDark
             : AppColors.primaryLight,
-        title: const Text('Create Nebula ID'),
+        title: const Text(
+          'Create Nebula ID',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         actions: [
           IconButton(
             icon: Icon(
               isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
-              color: Colors.white,
+              color: isDark ? AppColors.accentDark : AppColors.primaryLight,
             ),
             onPressed: widget.onToggleTheme,
           ),
@@ -99,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       body: Center(
         child: Container(
-          width: 400,
+          width: 420,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: panel,
@@ -110,7 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
             boxShadow: [
               BoxShadow(
                 color: accent.withOpacity(isDark ? 0.15 : 0.25),
-                blurRadius: 12,
+                blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
             ],

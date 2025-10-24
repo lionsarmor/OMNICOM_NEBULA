@@ -3,7 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api.dart';
 import '../widgets/nebula_login_animation.dart';
-import '../theme/app_colors.dart'; // ✅ Centralized colors
+import '../theme/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -79,37 +79,24 @@ class _LoginPageState extends State<LoginPage> {
           _errorMode = false;
           _loading = false;
         });
-
-        // SFX sequence
-        Future.delayed(const Duration(milliseconds: 250), () {
-          _audio.play(AssetSource('sfx/laser_charge.wav'));
-        });
-        Future.delayed(const Duration(milliseconds: 900), () {
-          _audio.play(AssetSource('sfx/laser_fire.wav'));
-        });
-        Future.delayed(const Duration(milliseconds: 2200), () {
-          _audio.play(AssetSource('sfx/impact.wav'));
-        });
-
-        Future.delayed(const Duration(milliseconds: 2400), () {
-          _goMain(username);
-        });
       } else {
-        _authFailed("❌ Authentication failed.");
+        setState(() {
+          _showAnim = true;
+          _errorMode = true;
+          _loading = false;
+          _status = "❌ Authentication failed.";
+        });
+        _audio.play(AssetSource('sfx/access_denied.wav'));
       }
     } catch (e) {
-      _authFailed("❌ Network error: $e");
+      setState(() {
+        _showAnim = true;
+        _errorMode = true;
+        _loading = false;
+        _status = "❌ Network error: $e";
+      });
+      _audio.play(AssetSource('sfx/access_denied.wav'));
     }
-  }
-
-  void _authFailed(String message) {
-    setState(() {
-      _showAnim = true;
-      _errorMode = true;
-      _loading = false;
-      _status = message;
-    });
-    _audio.play(AssetSource('sfx/access_denied.wav'));
   }
 
   void _goMain(String username) {
@@ -123,19 +110,18 @@ class _LoginPageState extends State<LoginPage> {
     final bgColor = isDark
         ? AppColors.backgroundDark
         : AppColors.backgroundLight;
-    final panelColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final panelColor = isDark ? AppColors.surfaceDark : Colors.white;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
     final headerGradient = isDark
         ? AppColors.darkHeaderGradient
         : AppColors.lightHeaderGradient;
-    final accent = isDark ? AppColors.accentDark : AppColors.primaryLight;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // === HEADER ===
+          // ===== HEADER =====
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
@@ -179,7 +165,9 @@ class _LoginPageState extends State<LoginPage> {
                         isDark
                             ? Icons.wb_sunny_rounded
                             : Icons.dark_mode_rounded,
-                        color: Colors.white,
+                        color: isDark
+                            ? AppColors.accentDark
+                            : AppColors.primaryLight,
                       ),
                       tooltip: isDark
                           ? "Switch to Light Mode"
@@ -192,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // === BODY ===
+          // ===== BODY =====
           Expanded(
             child: Center(
               child: AnimatedSwitcher(
@@ -201,6 +189,21 @@ class _LoginPageState extends State<LoginPage> {
                     ? NebulaLoginAnimation(
                         key: const ValueKey('anim'),
                         errorMode: _errorMode,
+                        onPhaseChange: (phase) {
+                          switch (phase) {
+                            case 'charge':
+                              _audio.play(AssetSource('sfx/laser_charge.wav'));
+                              break;
+                            case 'fire':
+                              _audio.play(AssetSource('sfx/laser_fire.wav'));
+                              break;
+                            case 'impact':
+                              _audio.play(AssetSource('sfx/impact.wav'));
+                              break;
+                            default:
+                              break;
+                          }
+                        },
                         onComplete: () => _goMain(_userCtrl.text.trim()),
                         onErrorEnd: () {
                           setState(() {
@@ -215,13 +218,12 @@ class _LoginPageState extends State<LoginPage> {
                         panelColor,
                         textColor,
                         headerGradient,
-                        accent,
                       ),
               ),
             ),
           ),
 
-          // === FOOTER ===
+          // ===== FOOTER =====
           Padding(
             padding: const EdgeInsets.only(bottom: 12, top: 6),
             child: Column(
@@ -257,8 +259,7 @@ class _LoginPageState extends State<LoginPage> {
     bool isDark,
     Color panelColor,
     Color textColor,
-    LinearGradient headerGradient,
-    Color accent,
+    Gradient headerGradient,
   ) {
     return Container(
       key: const ValueKey('form'),
@@ -268,13 +269,13 @@ class _LoginPageState extends State<LoginPage> {
         color: panelColor,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          color: isDark ? Colors.blueGrey.shade800 : AppColors.borderLight,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? AppColors.primaryDark.withOpacity(0.1)
-                : AppColors.primaryLight.withOpacity(0.2),
+                ? Colors.blue.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -283,7 +284,6 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // === FORM HEADER ===
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -303,15 +303,36 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 22),
-          _inputField(_userCtrl, "Screen Name", textColor, isDark),
+          TextField(
+            controller: _userCtrl,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              labelText: "Screen Name",
+              labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
+              border: const OutlineInputBorder(),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
+            ),
+          ),
           const SizedBox(height: 12),
-          _inputField(_passCtrl, "Password", textColor, isDark, obscure: true),
+          TextField(
+            controller: _passCtrl,
+            obscureText: true,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              labelText: "Password",
+              labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
+              border: const OutlineInputBorder(),
+              filled: true,
+              fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
+            ),
+          ),
           const SizedBox(height: 20),
-
-          // === SIGN ON BUTTON ===
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: accent,
+              backgroundColor: isDark
+                  ? AppColors.accentDark
+                  : AppColors.primaryLight,
               foregroundColor: isDark ? Colors.black : Colors.white,
               elevation: 3,
               padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
@@ -339,31 +360,12 @@ class _LoginPageState extends State<LoginPage> {
             onPressed: () => Navigator.pushNamed(context, '/register'),
             child: Text(
               "Create New Nebula ID",
-              style: TextStyle(color: accent),
+              style: TextStyle(
+                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _inputField(
-    TextEditingController ctrl,
-    String label,
-    Color textColor,
-    bool isDark, {
-    bool obscure = false,
-  }) {
-    return TextField(
-      controller: ctrl,
-      obscureText: obscure,
-      style: TextStyle(color: textColor),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
-        border: const OutlineInputBorder(),
-        filled: true,
-        fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
       ),
     );
   }
