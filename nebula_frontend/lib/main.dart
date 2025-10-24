@@ -22,18 +22,47 @@ class _NebulaAppState extends State<NebulaApp> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeData(
-      brightness: _darkMode ? Brightness.dark : Brightness.light,
+    // === COLOR THEMES ===
+    final darkTheme = ThemeData(
+      brightness: Brightness.dark,
       useMaterial3: true,
-      colorSchemeSeed:
-          _darkMode ? const Color(0xFF33A0FF) : const Color(0xFF0044AA),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF33A0FF), // blue accent
+        secondary: Color(0xFFFFEA00), // neon yellow
+        surface: Color(0xFF141B2E),
+        background: Color(0xFF0C0F1A),
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0C0F1A),
       fontFamily: 'Roboto',
+      iconTheme: const IconThemeData(color: Color(0xFFFFEA00)),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF141B2E),
+        titleTextStyle: TextStyle(color: Colors.white, fontSize: 18),
+      ),
+    );
+
+    final lightTheme = ThemeData(
+      brightness: Brightness.light,
+      useMaterial3: true,
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFF0044AA), // AOL blue
+        secondary: Color(0xFF0066FF),
+        background: Color(0xFFE4E9F4),
+        surface: Color(0xFFD9E4FF),
+      ),
+      scaffoldBackgroundColor: const Color(0xFFE4E9F4),
+      fontFamily: 'Roboto',
+      iconTheme: const IconThemeData(color: Color(0xFF0044AA)),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFFD9E4FF),
+        titleTextStyle: TextStyle(color: Color(0xFF003399), fontSize: 18),
+      ),
     );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Nebula by OMNICOM',
-      theme: theme,
+      theme: _darkMode ? darkTheme : lightTheme,
       initialRoute: '/login',
       routes: {
         '/login': (context) =>
@@ -43,18 +72,30 @@ class _NebulaAppState extends State<NebulaApp> {
         '/watchparty': (context) => const WatchPartyPage(),
       },
       onGenerateRoute: (settings) {
+        // Route enforcement for username
         if (settings.name == '/main') {
-          final username = (settings.arguments as String?) ?? 'Guest';
+          final arg = settings.arguments;
+          final isValidUsername = arg is String && arg.trim().isNotEmpty;
+
+          if (!isValidUsername) {
+            // invalid / empty username — send back to login
+            return MaterialPageRoute(
+              builder: (_) =>
+                  LoginPage(onToggleTheme: _toggleTheme, darkMode: _darkMode),
+            );
+          }
+
+          final username = (arg as String).trim();
           return MaterialPageRoute(
             builder: (_) => MainPage(
               darkMode: _darkMode,
               onToggleTheme: _toggleTheme,
-              username: username,
+              username: username, // ✅ required and passed
             ),
           );
         }
 
-        // Optional: simple 404 fallback if route not found
+        // fallback 404
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
             body: Center(
