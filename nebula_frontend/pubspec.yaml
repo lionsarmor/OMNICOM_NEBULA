@@ -10,10 +10,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # === CORE UI & ICONS ===
   cupertino_icons: ^1.0.8
+
+  # === NETWORK & STORAGE ===
   http: ^1.5.0
-  audioplayers: ^6.5.1   # 🎧 latest stable audio package
   shared_preferences: ^2.3.3
+
+  # === AUDIO / VIDEO / MEDIA ===
+  audioplayers: ^6.5.1         # 🎧 sound effects for login animation
+  video_player: ^2.9.1         # 🎥 plays MP4 / file / URL streams
+  youtube_player_iframe: ^5.2.1 # ▶ embeds and controls YouTube playback
 
 dev_dependencies:
   flutter_test:
