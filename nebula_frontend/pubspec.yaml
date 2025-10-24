@@ -19,9 +19,9 @@ dependencies:
   shared_preferences: ^2.3.3
 
   # === AUDIO / VIDEO / MEDIA ===
-  audioplayers: ^6.5.1          # sound effects
-  video_player: ^2.9.2          # MP4 / URL playback engine
-  youtube_explode_dart: ^2.3.6  # <-- fetch direct streams for YouTube on desktop/mobile
+  audioplayers: ^6.5.1          # 🔊 sound effects
+  video_player: ^2.9.2          # 🎥 plays MP4 / HLS / network streams
+  webview_flutter: ^4.9.0       # ▶ renders YouTube embeds safely on all platforms
 
 dev_dependencies:
   flutter_test:
