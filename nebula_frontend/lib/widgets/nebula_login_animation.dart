@@ -36,7 +36,7 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
   final _moon = Image.asset('assets/images/moon.png');
   final _c64 = Image.asset(
     'assets/images/c64.svg',
-    errorBuilder: (_, __, ___) => Image.asset('assets/images/logo.png'),
+    errorBuilder: (_, __, ___) => Image.asset('assets/images/c64.svg'),
   );
 
   @override
