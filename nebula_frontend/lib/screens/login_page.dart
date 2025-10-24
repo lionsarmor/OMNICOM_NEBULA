@@ -361,7 +361,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Text(
               "Create New Nebula ID",
               style: TextStyle(
-                color: isDark ? AppColors.primaryDark : AppColors.accentDark,
+                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
               ),
             ),
           ),
