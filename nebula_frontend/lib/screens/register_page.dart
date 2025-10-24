@@ -95,7 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
           IconButton(
             icon: Icon(
               isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
-              color: isDark ? AppColors.accentDark : AppColors.primaryLight,
+              color: isDark ? AppColors.accentDark : AppColors.accentDark,
             ),
             onPressed: widget.onToggleTheme,
           ),
