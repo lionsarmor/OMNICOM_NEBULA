@@ -163,11 +163,15 @@ class _LoginPageState extends State<LoginPage> {
                     IconButton(
                       icon: Icon(
                         isDark
-                            ? Icons.wb_sunny_rounded
-                            : Icons.dark_mode_rounded,
+                            ? Icons
+                                  .wb_sunny_rounded // ☀️ show sun when in dark mode
+                            : Icons
+                                  .dark_mode_rounded, // 🌙 show moon when in light mode
                         color: isDark
-                            ? AppColors.accentDark
-                            : AppColors.primaryLight,
+                            ? AppColors
+                                  .accentDark // neon yellow for sun in dark mode
+                            : AppColors
+                                  .primaryLightDark, // deep navy for moon in light mode (visible)
                       ),
                       tooltip: isDark
                           ? "Switch to Light Mode"
