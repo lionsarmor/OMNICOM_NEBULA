@@ -1,14 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
-/// Nebula login animation:
-/// - Success mode (default): C64-like computer fires a purple laser to the moon.
-/// - Error mode: red terminal text scroll + subtle screen shake.
-///
-/// Callbacks:
-///  - onComplete: fired when the success animation finishes.
-///  - onErrorEnd: fired after the error animation finishes.
-///  - onPhaseChange: 'charge', 'fire', 'impact', or 'error' (for sound sync)
+/// 🪐 NEBULA LOGIN ANIMATION 2.0
+/// - Green Star Wars–style laser beam from C64 to Moon PNG.
+/// - Glowing parallax stars, bloom, and cinematic energy effects.
+/// - Auto-syncs to light/dark AppColors.
 class NebulaLoginAnimation extends StatefulWidget {
   final VoidCallback? onComplete;
   final VoidCallback? onErrorEnd;
@@ -36,24 +33,28 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
   late final AnimationController _controller;
   String? _lastPhase;
 
+  final _moon = Image.asset('assets/images/moon.png');
+  final _c64 = Image.asset(
+    'assets/images/c64.svg',
+    errorBuilder: (_, __, ___) => Image.asset('assets/images/logo.png'),
+  );
+
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration:
-          widget.errorMode ? widget.errorDuration : widget.successDuration,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          if (widget.errorMode) {
-            widget.onErrorEnd?.call();
-          } else {
-            widget.onComplete?.call();
+    _controller =
+        AnimationController(
+          vsync: this,
+          duration: widget.errorMode
+              ? widget.errorDuration
+              : widget.successDuration,
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            widget.errorMode
+                ? widget.onErrorEnd?.call()
+                : widget.onComplete?.call();
           }
-        }
-      });
-
+        });
     WidgetsBinding.instance.addPostFrameCallback((_) => _controller.forward());
   }
 
@@ -65,7 +66,6 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
       }
       return;
     }
-
     if (t < 0.2 && _lastPhase != 'charge') {
       widget.onPhaseChange?.call('charge');
       _lastPhase = 'charge';
@@ -80,29 +80,58 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 800,
-            constraints.maxHeight.isFinite ? constraints.maxHeight : 600,
-          );
-          return AnimatedBuilder(
-            animation: _controller,
-            builder: (_, __) {
-              final t = _controller.value;
-              _handlePhases(t);
-              return CustomPaint(
-                size: size,
-                painter: NebulaPainter(
-                  t: t,
-                  errorMode: widget.errorMode,
-                ),
-              );
-            },
-          );
-        },
-      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(
+          constraints.maxWidth.isFinite ? constraints.maxWidth : 800,
+          constraints.maxHeight.isFinite ? constraints.maxHeight : 600,
+        );
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (_, __) {
+            final t = _controller.value;
+            _handlePhases(t);
+
+            return CustomPaint(
+              size: size,
+              painter: _NebulaPainter(
+                t: t,
+                errorMode: widget.errorMode,
+                isDark: isDark,
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // === MOON ===
+                  Positioned(
+                    right: size.width * 0.15,
+                    top: size.height * 0.12,
+                    width: size.shortestSide * 0.16,
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 400),
+                      child: _moon,
+                    ),
+                  ),
+
+                  // === C64 ===
+                  Positioned(
+                    left: size.width * 0.14,
+                    bottom: size.height * 0.1,
+                    width: size.shortestSide * 0.25,
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 400),
+                      child: _c64,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -113,201 +142,164 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
   }
 }
 
-/// Painter for both success and error variants.
-class NebulaPainter extends CustomPainter {
-  final double t; // 0..1
+/// Painter for cinematic beam + energy effects
+class _NebulaPainter extends CustomPainter {
+  final double t;
   final bool errorMode;
-  final math.Random _rng = math.Random(1337);
+  final bool isDark;
+  final math.Random _rng = math.Random(42);
 
-  NebulaPainter({required this.t, required this.errorMode});
+  _NebulaPainter({
+    required this.t,
+    required this.errorMode,
+    required this.isDark,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Background gradient (synthwave)
-    final bg = Rect.fromLTWH(0, 0, size.width, size.height);
+    final bgRect = Offset.zero & size;
     final bgGrad = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: const [
-        Color(0xFF120022),
-        Color(0xFF25004A),
-        Color(0xFF080013),
-      ],
+      colors: isDark
+          ? [const Color(0xFF0C0F1A), const Color(0xFF141B2E)]
+          : [const Color(0xFFE4E9F4), const Color(0xFFD9E4FF)],
     );
-    canvas.drawRect(bg, Paint()..shader = bgGrad.createShader(bg));
+    canvas.drawRect(bgRect, Paint()..shader = bgGrad.createShader(bgRect));
 
     _drawStars(canvas, size);
     _drawGrid(canvas, size);
 
     if (errorMode) {
-      _drawErrorScene(canvas, size, t);
+      _drawErrorOverlay(canvas, size);
       return;
     }
 
-    _drawMoon(canvas, size);
-    _drawComputer(canvas, size);
-
-    final chargeEnd = 0.20;
-    final fireEnd = 0.85;
-
-    final compCenter = Offset(size.width * 0.28, size.height * 0.62);
+    final compCenter = Offset(size.width * 0.28, size.height * 0.66);
     final moonCenter = Offset(size.width * 0.78, size.height * 0.28);
 
+    final chargeEnd = 0.2;
+    final fireEnd = 0.85;
+
     if (t < chargeEnd) {
-      final glow = (t / chargeEnd);
-      final glowPaint = Paint()
-        ..color = Colors.purpleAccent.withOpacity(0.3 + 0.5 * glow)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
-      canvas.drawCircle(compCenter, 30 + 25 * glow, glowPaint);
+      _drawChargeGlow(canvas, compCenter, t / chargeEnd);
     } else if (t < fireEnd) {
       final localT = (t - chargeEnd) / (fireEnd - chargeEnd);
-      final beamEnd =
-          Offset.lerp(compCenter, moonCenter, _easeOutCubic(localT))!;
-      _drawBeam(canvas, compCenter, beamEnd);
+      final beamEnd = Offset.lerp(
+        compCenter,
+        moonCenter,
+        _easeOutCubic(localT),
+      )!;
+      _drawLaserBeam(canvas, compCenter, beamEnd, localT);
     } else {
-      _drawBeam(canvas, compCenter, moonCenter);
-      final flashT = (t - fireEnd) / (1 - fireEnd);
-      _drawImpactFlash(canvas, moonCenter, size, flashT);
+      _drawLaserBeam(canvas, compCenter, moonCenter, 1.0);
+      _drawImpactExplosion(canvas, moonCenter, t);
     }
 
     _drawScanlines(canvas, size);
   }
 
+  void _drawChargeGlow(Canvas canvas, Offset center, double glow) {
+    final base = Paint()
+      ..color = Colors.greenAccent.withOpacity(0.2 + 0.5 * glow)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 35);
+    canvas.drawCircle(center, 40 + 40 * glow, base);
+  }
+
+  void _drawLaserBeam(Canvas canvas, Offset from, Offset to, double localT) {
+    final tail = (1.0 - localT) * 40.0;
+    final beamPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF00FF00), Color(0xFF66FF66)],
+      ).createShader(Rect.fromPoints(from, to))
+      ..strokeWidth = 5 + (2 * math.sin(localT * 30))
+      ..style = PaintingStyle.stroke
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+    canvas.drawLine(from, to, beamPaint);
+
+    // energy pulse
+    final pulse = Paint()
+      ..color = Colors.white.withOpacity(0.4)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(from, to, pulse);
+
+    // glowing tail burst
+    final tailPaint = Paint()
+      ..color = Colors.greenAccent.withOpacity(0.2)
+      ..strokeWidth = tail.clamp(1, 20)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40);
+    canvas.drawCircle(to, 10 + 10 * localT, tailPaint);
+  }
+
+  void _drawImpactExplosion(Canvas canvas, Offset center, double t) {
+    final phase = ((t - 0.85) / 0.15).clamp(0.0, 1.0);
+    final paint = Paint()
+      ..color = Colors.greenAccent.withOpacity(1.0 - phase)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40);
+    canvas.drawCircle(center, 30 + 70 * phase, paint);
+
+    // energy ring
+    final ring = Paint()
+      ..color = Colors.white.withOpacity(0.4 - 0.4 * phase)
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(center, 80 * phase, ring);
+  }
+
   void _drawStars(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.7);
-    for (int i = 0; i < 120; i++) {
-      final x = (i * 127.1) % size.width;
-      final y = (i * 73.7) % (size.height * 0.55);
-      final twinkle = 0.5 + 0.5 * math.sin((i * 0.37) + t * 12.0);
-      paint.color = Colors.white.withOpacity(0.2 + 0.6 * twinkle);
-      canvas.drawCircle(Offset(x, y), 0.8 + (twinkle * 1.2), paint);
+    final paint = Paint();
+    for (int i = 0; i < 200; i++) {
+      final x = (i * 73.7) % size.width;
+      final y = (i * 41.3) % (size.height * 0.7);
+      final twinkle = 0.4 + 0.6 * math.sin((i * 0.77) + t * 8.0);
+      paint.color = Colors.white.withOpacity(0.1 + 0.5 * twinkle);
+      canvas.drawCircle(Offset(x, y), 0.8 + (twinkle * 1.4), paint);
     }
   }
 
   void _drawGrid(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = Colors.purple.withOpacity(0.25)
+    final paint = Paint()
+      ..color = (isDark ? Colors.greenAccent : Colors.lightGreenAccent)
+          .withOpacity(0.2)
       ..strokeWidth = 1;
 
     final horizonY = size.height * 0.72;
-    final rows = 10;
-    final cols = 14;
-
+    const rows = 10, cols = 14;
     for (int r = 0; r < rows; r++) {
-      final lerp = r / rows;
-      final y = horizonY + math.pow(lerp, 2) * (size.height - horizonY);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      final y = horizonY + math.pow(r / rows, 2) * (size.height - horizonY);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
-
     for (int c = 0; c <= cols; c++) {
       final x = size.width * (c / cols);
-      canvas.drawLine(Offset(x, horizonY), Offset(x, size.height), gridPaint);
+      canvas.drawLine(Offset(x, horizonY), Offset(x, size.height), paint);
     }
   }
 
-  void _drawMoon(Canvas canvas, Size size) {
-    final moonCenter = Offset(size.width * 0.78, size.height * 0.28);
-    final r = size.shortestSide * 0.06;
-
-    final moonPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [Colors.grey.shade200, Colors.grey.shade600],
-      ).createShader(Rect.fromCircle(center: moonCenter, radius: r));
-
-    canvas.drawCircle(moonCenter, r, moonPaint);
-  }
-
-  void _drawComputer(Canvas canvas, Size size) {
-    final center = Offset(size.width * 0.28, size.height * 0.62);
-
-    final bodyRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: 140, height: 90),
-      const Radius.circular(8),
-    );
-    canvas.drawRRect(
-        bodyRect, Paint()..color = const Color(0xFF33FFDD).withOpacity(0.85));
-
-    final bezel = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center.translate(0, -5), width: 110, height: 60),
-      const Radius.circular(6),
-    );
-    canvas.drawRRect(bezel, Paint()..color = const Color(0xFF0B2A2A));
-
-    final screenRect =
-        Rect.fromCenter(center: center.translate(0, -5), width: 100, height: 50);
-    final screenGrad = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        const Color(0xFF00FFC8).withOpacity(0.35 + 0.15 * math.sin(t * 6)),
-        const Color(0xFF0A6060).withOpacity(0.65),
-      ],
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(screenRect, const Radius.circular(4)),
-      Paint()..shader = screenGrad.createShader(screenRect),
-    );
-
-    canvas.drawRect(
-      Rect.fromCenter(center: center.translate(0, 34), width: 60, height: 6),
-      Paint()..color = const Color(0xFF108080),
-    );
-    canvas.drawCircle(center.translate(55, 34), 4,
-        Paint()..color = Colors.greenAccent.withOpacity(0.9));
-  }
-
-  void _drawBeam(Canvas canvas, Offset from, Offset to) {
-    final glowPaint = Paint()
-      ..color = Colors.purpleAccent.withOpacity(0.35)
-      ..strokeWidth = 10
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18)
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(from, to, glowPaint);
-
-    final corePaint = Paint()
-      ..shader = LinearGradient(
-        colors: const [
-          Color(0xFFBE4BFF),
-          Color(0xFF9C2BFF),
-          Color(0xFFE07BFF),
-        ],
-      ).createShader(Rect.fromPoints(from, to))
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(from, to, corePaint);
-  }
-
-  void _drawImpactFlash(Canvas canvas, Offset center, Size size, double flashT) {
-    final radius = flashT * (size.shortestSide * 0.12);
-    final alpha = (1.0 - flashT).clamp(0.0, 1.0);
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.6 * alpha)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 25);
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  void _drawScanlines(Canvas canvas, Size size) {
-    final lines = Paint()
-      ..color = Colors.black.withOpacity(0.08)
-      ..strokeWidth = 1;
-    for (double y = 0; y < size.height; y += 3) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), lines);
-    }
-  }
-
-  void _drawErrorScene(Canvas canvas, Size size, double t) {
+  void _drawErrorOverlay(Canvas canvas, Size size) {
     final shake = 4.0 * math.sin(t * 40.0);
     canvas.save();
     canvas.translate(shake, 0);
-    final overlay = Paint()..color = const Color(0xFF250019).withOpacity(0.55);
-    canvas.drawRect(Offset.zero & size, overlay);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFF330000).withOpacity(0.6),
+    );
     canvas.restore();
     _drawScanlines(canvas, size);
+  }
+
+  void _drawScanlines(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withOpacity(0.08)
+      ..strokeWidth = 1;
+    for (double y = 0; y < size.height; y += 3) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
   }
 
   double _easeOutCubic(double x) => 1 - math.pow(1 - x, 3).toDouble();
 
   @override
-  bool shouldRepaint(covariant NebulaPainter old) =>
+  bool shouldRepaint(covariant _NebulaPainter old) =>
       old.t != t || old.errorMode != errorMode;
 }

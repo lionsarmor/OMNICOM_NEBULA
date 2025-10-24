@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class MainPage extends StatelessWidget {
   final bool darkMode;
@@ -18,32 +19,39 @@ class MainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // === COLORS ===
-    final neonYellow = const Color(0xFFFFEA00);
-    final bgColor = darkMode ? const Color(0xFF0C0F1A) : const Color(0xFFE4E9F4);
-    final sidebarColor = darkMode ? const Color(0xFF141B2E) : const Color(0xFFD9E4FF);
-    final topBarColor = darkMode ? const Color(0xFF1A1F33) : const Color(0xFFCCE0FF);
-    final textColor = darkMode ? Colors.white70 : Colors.black87;
-    final accent = neonYellow;
+    final isDark = darkMode;
+
+    // Centralized color picks
+    final bgColor = isDark
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+    final sidebarColor = isDark
+        ? AppColors.surfaceDark
+        : AppColors.surfaceLight;
+    final topBarColor = isDark
+        ? const Color(0xFF1A1F33)
+        : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textDark : AppColors.textLight;
+    final accent = isDark ? AppColors.accentDark : AppColors.primaryLight;
+    final headerGradient = isDark
+        ? AppColors.darkHeaderGradient
+        : AppColors.lightHeaderGradient;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Row(
         children: [
-          // ===== LEFT SIDEBAR =====
+          // ==== LEFT SIDEBAR ====
           Container(
             width: 220,
             decoration: BoxDecoration(
               color: sidebarColor,
               border: Border(
-                right: BorderSide(
-                  color: neonYellow.withOpacity(0.2),
-                  width: 1.5,
-                ),
+                right: BorderSide(color: accent.withOpacity(0.2), width: 1.5),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: neonYellow.withOpacity(0.05),
+                  color: accent.withOpacity(0.05),
                   blurRadius: 12,
                   offset: const Offset(2, 0),
                 ),
@@ -51,38 +59,29 @@ class MainPage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // ===== HEADER LOGO =====
+                // ==== HEADER LOGO ====
                 Container(
                   height: 60,
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: darkMode
-                          ? [const Color(0xFF3E3A00), const Color(0xFF000000)]
-                          : [const Color(0xFFFFF59D), const Color(0xFFFFFDE7)],
-                    ),
-                  ),
+                  decoration: BoxDecoration(gradient: headerGradient),
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "🛰️  OMNICOM",
                     style: TextStyle(
-                      color: textColor,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
                       letterSpacing: 1.5,
                       fontFamily: 'Orbitron',
                       shadows: [
-                        Shadow(
-                          color: neonYellow.withOpacity(0.8),
-                          blurRadius: 8,
-                        ),
+                        Shadow(color: accent.withOpacity(0.7), blurRadius: 8),
                       ],
                     ),
                   ),
                 ),
 
-                // ===== NAVIGATION ITEMS =====
+                // ==== NAVIGATION ====
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.only(top: 10),
@@ -91,90 +90,67 @@ class MainPage extends StatelessWidget {
                         Icons.dashboard_rounded,
                         "News",
                         accent,
-                        darkMode,
-                        onTap: () {
-                          // TODO: Implement News page route
-                        },
+                        isDark,
                       ),
                       _navButton(
                         Icons.chat_rounded,
                         "Messages",
                         accent,
-                        darkMode,
-                        onTap: () {
-                          // TODO: Implement Messages page route
-                        },
+                        isDark,
                       ),
-                      _navButton(
-                        Icons.tv_rounded,
-                        "Channels",
-                        accent,
-                        darkMode,
-                        onTap: () {
-                          // TODO: Implement Channels page route
-                        },
-                      ),
+                      _navButton(Icons.tv_rounded, "Channels", accent, isDark),
                       _navButton(
                         Icons.ondemand_video_rounded,
                         "Watch Party",
                         accent,
-                        darkMode,
-                        onTap: () {
-                          Navigator.pushNamed(context, '/watchparty');
-                        },
+                        isDark,
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/watchparty'),
                       ),
                       _navButton(
                         Icons.group_rounded,
                         "Buddies",
                         accent,
-                        darkMode,
-                        onTap: () {
-                          // TODO: Implement Buddies page route
-                        },
+                        isDark,
                       ),
                       _navButton(
                         Icons.memory_rounded,
                         "System",
                         accent,
-                        darkMode,
-                        onTap: () {
-                          // TODO: Implement System page route
-                        },
+                        isDark,
                       ),
                     ],
                   ),
                 ),
 
-                // ===== SIDEBAR FOOTER =====
+                // ==== SIDEBAR FOOTER ====
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10, top: 4),
                   child: Text(
                     "v0.9.2 — Nebula",
                     style: TextStyle(
-                      color: neonYellow.withOpacity(0.6),
+                      color: accent.withOpacity(0.6),
                       fontSize: 11,
                       letterSpacing: 1.2,
                     ),
                   ),
                 ),
 
-                // ===== BOTTOM PROFILE =====
+                // ==== PROFILE BAR ====
                 Container(
                   height: 70,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color:
-                        darkMode ? const Color(0xFF0E1422) : const Color(0xFFDCE6F9),
+                    color: isDark
+                        ? const Color(0xFF0E1422)
+                        : const Color(0xFFDCE6F9),
                     border: Border(
-                      top: BorderSide(
-                        color: neonYellow.withOpacity(0.2),
-                      ),
+                      top: BorderSide(color: accent.withOpacity(0.2)),
                     ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Profile Avatar + Name + Status
                       Row(
                         children: [
                           Container(
@@ -182,9 +158,9 @@ class MainPage extends StatelessWidget {
                             height: 34,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: neonYellow.withOpacity(0.25),
+                              color: accent.withOpacity(0.25),
                               border: Border.all(
-                                color: neonYellow.withOpacity(0.8),
+                                color: accent.withOpacity(0.8),
                                 width: 2,
                               ),
                             ),
@@ -210,10 +186,7 @@ class MainPage extends StatelessWidget {
                               ),
                               Text(
                                 "Online",
-                                style: TextStyle(
-                                  color: neonYellow,
-                                  fontSize: 11,
-                                ),
+                                style: TextStyle(color: accent, fontSize: 11),
                               ),
                             ],
                           ),
@@ -231,59 +204,60 @@ class MainPage extends StatelessWidget {
             ),
           ),
 
-          // ===== MAIN PANEL =====
+          // ==== MAIN PANEL ====
           Expanded(
             child: Column(
               children: [
-                // ===== TOP BAR =====
+                // ==== TOP BAR ====
                 Container(
                   height: 60,
                   decoration: BoxDecoration(
                     color: topBarColor,
                     border: Border(
-                      bottom: BorderSide(
-                        color: neonYellow.withOpacity(0.1),
-                      ),
+                      bottom: BorderSide(color: accent.withOpacity(0.1)),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: neonYellow.withOpacity(0.05),
+                        color: accent.withOpacity(0.05),
                         offset: const Offset(0, 3),
                         blurRadius: 6,
                       ),
                     ],
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         "Nebula — Core Console",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.3,
+                          color: textColor,
                         ),
                       ),
                       Row(
                         children: [
                           IconButton(
-                            tooltip: darkMode
+                            tooltip: isDark
                                 ? 'Switch to Light Mode'
                                 : 'Switch to Dark Mode',
                             icon: Icon(
-                              darkMode
+                              isDark
                                   ? Icons.wb_sunny_rounded
                                   : Icons.dark_mode_rounded,
-                              color: neonYellow,
+                              color: accent,
                             ),
                             onPressed: onToggleTheme,
                           ),
                           const SizedBox(width: 10),
                           IconButton(
                             tooltip: 'Log out',
-                            icon: Icon(Icons.logout_rounded, color: neonYellow),
+                            icon: Icon(Icons.logout_rounded, color: accent),
                             onPressed: () => _logout(context),
                           ),
                         ],
@@ -292,13 +266,13 @@ class MainPage extends StatelessWidget {
                   ),
                 ),
 
-                // ===== MAIN CONTENT =====
+                // ==== MAIN CONTENT ====
                 Expanded(
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: darkMode
+                        colors: isDark
                             ? [
                                 const Color(0xFF0B0E15),
                                 const Color(0xFF0C0F20),
@@ -325,7 +299,7 @@ class MainPage extends StatelessWidget {
                           letterSpacing: 0.5,
                           shadows: [
                             Shadow(
-                              color: neonYellow.withOpacity(0.4),
+                              color: accent.withOpacity(0.4),
                               blurRadius: 12,
                             ),
                           ],
@@ -342,7 +316,7 @@ class MainPage extends StatelessWidget {
     );
   }
 
-  // ===== NAV BUTTON WIDGET =====
+  // ==== NAV BUTTON ====
   Widget _navButton(
     IconData icon,
     String label,
@@ -360,9 +334,7 @@ class MainPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: accent.withOpacity(0.2),
-            ),
+            border: Border.all(color: accent.withOpacity(0.2)),
           ),
           child: Row(
             children: [
@@ -373,7 +345,7 @@ class MainPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: darkMode ? Colors.white70 : Colors.black87,
+                  color: darkMode ? Colors.white70 : AppColors.textLight,
                 ),
               ),
             ],

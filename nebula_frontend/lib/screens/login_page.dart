@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api.dart';
 import '../widgets/nebula_login_animation.dart';
+import '../theme/app_colors.dart'; // ✅ Centralized colors
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -60,20 +61,17 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (res.containsKey('token')) {
-        // Save token
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', res['token']);
 
-        // Optionally fetch profile for username
         String username = _userCtrl.text.trim();
         try {
           final profile = await ApiService.getProfile(res['token']);
-          if (profile['username'] is String && (profile['username'] as String).isNotEmpty) {
+          if (profile['username'] is String &&
+              (profile['username'] as String).isNotEmpty) {
             username = profile['username'];
           }
-        } catch (_) {
-          // ignore profile fetch failure; fall back to typed username
-        }
+        } catch (_) {}
 
         setState(() {
           _status = "Access channel locked. Initiating uplink…";
@@ -93,28 +91,25 @@ class _LoginPageState extends State<LoginPage> {
           _audio.play(AssetSource('sfx/impact.wav'));
         });
 
-        // Navigate to main after animation completes
         Future.delayed(const Duration(milliseconds: 2400), () {
           _goMain(username);
         });
       } else {
-        setState(() {
-          _showAnim = true;
-          _errorMode = true;
-          _loading = false;
-          _status = "❌ Authentication failed.";
-        });
-        _audio.play(AssetSource('sfx/access_denied.wav'));
+        _authFailed("❌ Authentication failed.");
       }
     } catch (e) {
-      setState(() {
-        _showAnim = true;
-        _errorMode = true;
-        _loading = false;
-        _status = "❌ Network error: $e";
-      });
-      _audio.play(AssetSource('sfx/access_denied.wav'));
+      _authFailed("❌ Network error: $e");
     }
+  }
+
+  void _authFailed(String message) {
+    setState(() {
+      _showAnim = true;
+      _errorMode = true;
+      _loading = false;
+      _status = message;
+    });
+    _audio.play(AssetSource('sfx/access_denied.wav'));
   }
 
   void _goMain(String username) {
@@ -125,25 +120,32 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.darkMode;
-    final bgColor = isDark ? const Color(0xFF0C0F1A) : const Color(0xFFEAF3FF);
-    final panelColor = isDark ? const Color(0xFF171C28) : const Color(0xFFE0E6F2);
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = isDark
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+    final panelColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textDark : AppColors.textLight;
     final headerGradient = isDark
-        ? const LinearGradient(colors: [Color(0xFF004466), Color(0xFF000820)])
-        : const LinearGradient(colors: [Color(0xFF33A0FF), Color(0xFF005CBB)]);
+        ? AppColors.darkHeaderGradient
+        : AppColors.lightHeaderGradient;
+    final accent = isDark ? AppColors.accentDark : AppColors.primaryLight;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // HEADER
+          // === HEADER ===
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: headerGradient,
               boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1)),
+                BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
               ],
             ),
             child: Row(
@@ -173,8 +175,15 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(width: 12),
                     IconButton(
-                      icon: Icon(isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded, color: Colors.white),
-                      tooltip: isDark ? "Switch to Light Mode" : "Switch to Dark Mode",
+                      icon: Icon(
+                        isDark
+                            ? Icons.wb_sunny_rounded
+                            : Icons.dark_mode_rounded,
+                        color: Colors.white,
+                      ),
+                      tooltip: isDark
+                          ? "Switch to Light Mode"
+                          : "Switch to Dark Mode",
                       onPressed: widget.onToggleTheme,
                     ),
                   ],
@@ -183,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // BODY
+          // === BODY ===
           Expanded(
             child: Center(
               child: AnimatedSwitcher(
@@ -193,7 +202,7 @@ class _LoginPageState extends State<LoginPage> {
                         key: const ValueKey('anim'),
                         errorMode: _errorMode,
                         onComplete: () => _goMain(_userCtrl.text.trim()),
-                        onErrorEnd: () async {
+                        onErrorEnd: () {
                           setState(() {
                             _showAnim = false;
                             _loading = false;
@@ -201,12 +210,18 @@ class _LoginPageState extends State<LoginPage> {
                           });
                         },
                       )
-                    : _buildLoginForm(isDark, panelColor, textColor, headerGradient),
+                    : _buildLoginForm(
+                        isDark,
+                        panelColor,
+                        textColor,
+                        headerGradient,
+                        accent,
+                      ),
               ),
             ),
           ),
 
-          // FOOTER
+          // === FOOTER ===
           Padding(
             padding: const EdgeInsets.only(bottom: 12, top: 6),
             child: Column(
@@ -243,6 +258,7 @@ class _LoginPageState extends State<LoginPage> {
     Color panelColor,
     Color textColor,
     LinearGradient headerGradient,
+    Color accent,
   ) {
     return Container(
       key: const ValueKey('form'),
@@ -251,10 +267,14 @@ class _LoginPageState extends State<LoginPage> {
       decoration: BoxDecoration(
         color: panelColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade200),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.3),
+            color: isDark
+                ? AppColors.primaryDark.withOpacity(0.1)
+                : AppColors.primaryLight.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -263,6 +283,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // === FORM HEADER ===
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -282,42 +303,30 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 22),
-          TextField(
-            controller: _userCtrl,
-            style: TextStyle(color: textColor),
-            decoration: InputDecoration(
-              labelText: "Screen Name",
-              labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
-              border: const OutlineInputBorder(),
-              filled: true,
-              fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
-            ),
-          ),
+          _inputField(_userCtrl, "Screen Name", textColor, isDark),
           const SizedBox(height: 12),
-          TextField(
-            controller: _passCtrl,
-            obscureText: true,
-            style: TextStyle(color: textColor),
-            decoration: InputDecoration(
-              labelText: "Password",
-              labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
-              border: const OutlineInputBorder(),
-              filled: true,
-              fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
-            ),
-          ),
+          _inputField(_passCtrl, "Password", textColor, isDark, obscure: true),
           const SizedBox(height: 20),
+
+          // === SIGN ON BUTTON ===
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? const Color(0xFF0066CC) : const Color(0xFFFFD700),
-              foregroundColor: isDark ? Colors.white : Colors.black,
+              backgroundColor: accent,
+              foregroundColor: isDark ? Colors.black : Colors.white,
               elevation: 3,
               padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
             ),
             onPressed: _loading ? null : _login,
             child: _loading
-                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2.2))
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2.2),
+                  )
                 : const Text("Sign On"),
           ),
           const SizedBox(height: 12),
@@ -330,10 +339,31 @@ class _LoginPageState extends State<LoginPage> {
             onPressed: () => Navigator.pushNamed(context, '/register'),
             child: Text(
               "Create New Nebula ID",
-              style: TextStyle(color: isDark ? Colors.blue[200] : Colors.blue[800]),
+              style: TextStyle(color: accent),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _inputField(
+    TextEditingController ctrl,
+    String label,
+    Color textColor,
+    bool isDark, {
+    bool obscure = false,
+  }) {
+    return TextField(
+      controller: ctrl,
+      obscureText: obscure,
+      style: TextStyle(color: textColor),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
+        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
       ),
     );
   }

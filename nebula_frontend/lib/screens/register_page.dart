@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api.dart';
+import '../theme/app_colors.dart';
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -52,7 +53,6 @@ class _RegisterPageState extends State<RegisterPage> {
           _status = "✅ Registration complete! Redirecting…";
         });
 
-        // delay to show success
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) Navigator.pop(context);
       } else {
@@ -72,15 +72,20 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.darkMode;
-    final bg = isDark ? const Color(0xFF0B0E19) : const Color(0xFFF2F4FF);
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final panel = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textDark : AppColors.textLight;
+    final accent = isDark ? AppColors.accentDark : AppColors.primaryLight;
+    final headerGradient = isDark
+        ? AppColors.darkHeaderGradient
+        : AppColors.lightHeaderGradient;
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: isDark
-            ? const Color(0xFF004466)
-            : const Color(0xFF33A0FF),
+            ? AppColors.surfaceDark
+            : AppColors.primaryLight,
         title: const Text('Create Nebula ID'),
         actions: [
           IconButton(
@@ -97,66 +102,74 @@ class _RegisterPageState extends State<RegisterPage> {
           width: 400,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF171C28) : Colors.white,
+            color: panel,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isDark
-                  ? Colors.blueGrey.shade700
-                  : Colors.blueGrey.shade200,
+              color: isDark ? AppColors.borderDark : AppColors.borderLight,
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark ? Colors.black54 : Colors.grey.withOpacity(0.4),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: accent.withOpacity(isDark ? 0.15 : 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Register for Nebula',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              // ==== HEADER ====
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: headerGradient,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  "REGISTER FOR NEBULA",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              TextField(
+
+              // ==== INPUTS ====
+              _inputField(
                 controller: _userCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Screen Name',
-                  border: const OutlineInputBorder(),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
-                ),
-                style: TextStyle(color: textColor),
+                label: 'Screen Name',
+                textColor: textColor,
+                isDark: isDark,
               ),
               const SizedBox(height: 12),
-              TextField(
+              _inputField(
                 controller: _passCtrl,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: const OutlineInputBorder(),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
-                ),
-                style: TextStyle(color: textColor),
+                label: 'Password',
+                textColor: textColor,
+                isDark: isDark,
+                obscure: true,
               ),
               const SizedBox(height: 20),
+
+              // ==== BUTTON ====
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark
-                      ? const Color(0xFF0066CC)
-                      : const Color(0xFFFFD700),
-                  foregroundColor: isDark ? Colors.white : Colors.black,
+                  backgroundColor: accent,
+                  foregroundColor: isDark ? Colors.black : Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 50,
                     vertical: 14,
                   ),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                  ),
+                  elevation: 3,
                 ),
                 onPressed: _loading ? null : _register,
                 child: _loading
@@ -168,6 +181,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     : const Text('Create Account'),
               ),
               const SizedBox(height: 16),
+
+              // ==== STATUS ====
               if (_status != null)
                 Text(
                   _status!,
@@ -176,19 +191,38 @@ class _RegisterPageState extends State<RegisterPage> {
                     fontSize: 14,
                   ),
                 ),
+
               const SizedBox(height: 12),
+
+              // ==== BACK BUTTON ====
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Back to Sign On',
-                  style: TextStyle(
-                    color: isDark ? Colors.blue[200] : Colors.blue[800],
-                  ),
-                ),
+                child: Text('Back to Sign On', style: TextStyle(color: accent)),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String label,
+    required Color textColor,
+    required bool isDark,
+    bool obscure = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      style: TextStyle(color: textColor),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: textColor.withOpacity(0.9)),
+        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF23283B) : Colors.white,
       ),
     );
   }
