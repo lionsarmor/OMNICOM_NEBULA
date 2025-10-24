@@ -19,9 +19,9 @@ dependencies:
   shared_preferences: ^2.3.3
 
   # === AUDIO / VIDEO / MEDIA ===
-  audioplayers: ^6.5.1          # 🎧 sound effects for login animation
-  video_player: ^2.9.2          # 🎥 MP4 / URL playback engine
-  youtube_player_iframe: ^5.2.1 # ▶ YouTube video embedding + control
+  audioplayers: ^6.5.1          # sound effects
+  video_player: ^2.9.2          # MP4 / URL playback engine
+  youtube_explode_dart: ^2.3.6  # <-- fetch direct streams for YouTube on desktop/mobile
 
 dev_dependencies:
   flutter_test:
@@ -32,7 +32,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    # === IMAGES ===
     - assets/images/
-    # === SOUND EFFECTS ===
     - assets/sfx/

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../theme/app_colors.dart';
 
 class WatchPartyPage extends StatefulWidget {
@@ -13,95 +13,108 @@ class WatchPartyPage extends StatefulWidget {
 
 class _WatchPartyPageState extends State<WatchPartyPage> {
   final TextEditingController _urlController = TextEditingController();
+  final YoutubeExplode _yt = YoutubeExplode();
+
   String? _videoUrl;
   String? _inviteLink;
 
-  VideoPlayerController? _fileController;
-  YoutubePlayerController? _ytController;
-  bool _isYouTube = false;
+  VideoPlayerController? _controller;
   bool _loading = false;
   String? _error;
 
-  // 🔹 MAIN VIDEO LOADER
-  void _loadVideo() async {
-    final url = _urlController.text.trim();
-    if (url.isEmpty) return;
+  // ------------- Helpers -------------
+  void _disposePlayer() {
+    debugPrint('♻ Disposing player...');
+    _controller?.removeListener(_onVideoTick);
+    _controller?.dispose();
+    _controller = null;
+  }
 
-    _disposePlayers();
-    debugPrint("🔸 INIT: Loading new URL -> $url");
-
-    setState(() {
-      _loading = true;
-      _error = null;
-      _videoUrl = url;
-      _inviteLink = null;
-      _isYouTube = url.contains("youtube.com") || url.contains("youtu.be");
-    });
-
-    try {
-      if (_isYouTube) {
-        final videoId = YoutubePlayerController.convertUrlToId(url);
-        if (videoId == null) {
-          debugPrint("❌ YT: Could not extract ID.");
-          setState(() {
-            _loading = false;
-            _error = "Invalid YouTube URL.";
-          });
-          return;
-        }
-
-        debugPrint("🎥 YT: Extracted ID = $videoId");
-        _ytController = YoutubePlayerController.fromVideoId(
-          videoId: videoId,
-          autoPlay: true,
-          params: const YoutubePlayerParams(
-            showFullscreenButton: true,
-            enableCaption: false,
-          ),
-        );
-
-        _ytController?.listen((event) {
-          debugPrint("🎬 YT Event: ${event.playerState}");
-        });
-
-        await Future.delayed(const Duration(milliseconds: 300));
-        setState(() => _loading = false);
-        debugPrint("✅ YT: Controller ready.");
-      } else {
-        debugPrint("🎞 FILE: Initializing stream...");
-        _fileController = VideoPlayerController.networkUrl(Uri.parse(url));
-
-        _fileController!.addListener(() {
-          if (_fileController!.value.hasError) {
-            debugPrint("❌ FILE: ${_fileController!.value.errorDescription}");
-          }
-        });
-
-        await _fileController!.initialize();
-        debugPrint("✅ FILE: Initialized (${_fileController!.value.duration}).");
-        await _fileController!.play();
-        debugPrint("▶ FILE: Playback started.");
-        setState(() => _loading = false);
-      }
-    } catch (e, st) {
-      debugPrint("💥 ERROR: $e\n$st");
-      setState(() {
-        _loading = false;
-        _error = "Failed to load: $e";
-      });
+  void _onVideoTick() {
+    final v = _controller?.value;
+    if (v == null) return;
+    if (v.hasError) {
+      debugPrint('❌ PLAYER ERROR: ${v.errorDescription}');
+      setState(() => _error = v.errorDescription ?? 'Unknown player error');
     }
   }
 
-  void _disposePlayers() {
-    debugPrint("♻ Disposing players...");
+  // ------------- Loader -------------
+  Future<void> _loadVideo() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) return;
+
+    _disposePlayer();
+    setState(() {
+      _videoUrl = url;
+      _inviteLink = null;
+      _loading = true;
+      _error = null;
+    });
+
     try {
-      _fileController?.dispose();
-      _ytController?.close();
-    } catch (e) {
-      debugPrint("⚠ Dispose error: $e");
+      final uri = Uri.parse(url);
+      final isYouTube =
+          uri.host.contains('youtube.com') || uri.host.contains('youtu.be');
+
+      if (isYouTube) {
+        debugPrint('🎬 Fetching YouTube stream for: $url');
+
+        // Extract video id (supports youtu.be and youtube.com/watch?v=...)
+        final videoId = _extractYouTubeId(url);
+        if (videoId == null) throw 'Invalid YouTube URL';
+
+        // Get manifest and choose highest bitrate muxed stream
+        final manifest = await _yt.videos.streamsClient.getManifest(videoId);
+        final muxed = manifest.muxed.withHighestBitrate();
+        if (muxed == null) throw 'No playable muxed stream found';
+
+        final direct = muxed.url.toString();
+        debugPrint('✅ YouTube direct URL resolved: $direct');
+
+        _controller = VideoPlayerController.networkUrl(Uri.parse(direct));
+      } else {
+        debugPrint('🎞 Loading network/local stream: $url');
+        _controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      }
+
+      _controller!.addListener(_onVideoTick);
+
+      await _controller!.initialize();
+      debugPrint(
+        '✅ Video initialized, duration: ${_controller!.value.duration}',
+      );
+      await _controller!.play();
+      debugPrint('▶ Playback started.');
+    } catch (e, st) {
+      debugPrint('💥 Load error: $e\n$st');
+      setState(() => _error = 'Failed to load: $e');
+    } finally {
+      setState(() => _loading = false);
     }
-    _fileController = null;
-    _ytController = null;
+  }
+
+  String? _extractYouTubeId(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.host.contains('youtu.be')) {
+        return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      }
+      if (uri.host.contains('youtube.com')) {
+        final v = uri.queryParameters['v'];
+        if (v != null && v.isNotEmpty) return v;
+        // /embed/VIDEOID
+        if (uri.pathSegments.contains('embed')) {
+          final idx = uri.pathSegments.indexOf('embed');
+          if (idx >= 0 && idx + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[idx + 1];
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   void _generateInviteLink() {
@@ -109,26 +122,28 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     setState(() {
       _inviteLink = "https://watch.omnicom.online/?room=$randomId";
     });
-    debugPrint("🔗 Invite Link Generated: $_inviteLink");
+    debugPrint('🔗 Invite Link: $_inviteLink');
   }
 
   @override
   void dispose() {
-    _disposePlayers();
+    _disposePlayer();
+    _yt.close();
     _urlController.dispose();
     super.dispose();
   }
 
-  // 🔹 UI
+  // ------------- UI -------------
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = AppColors.accentDark; // AOL yellow
+    final accent =
+        AppColors.accentDark; // AOL yellow (your “basic button” color)
     final textColor = isDark ? Colors.white70 : Colors.black87;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("🎬 Watch Party"),
+        title: const Text('🎬 Watch Party'),
         backgroundColor: isDark
             ? AppColors.surfaceDark
             : AppColors.surfaceLight,
@@ -140,14 +155,14 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ===== INPUT =====
+            // ---- URL input + play
             Row(
-              children: [
+              children: {
                 Expanded(
                   child: TextField(
                     controller: _urlController,
                     decoration: InputDecoration(
-                      labelText: "Enter YouTube or Video File URL",
+                      labelText: 'Enter YouTube or Video File URL',
                       border: const OutlineInputBorder(),
                       labelStyle: TextStyle(color: textColor.withOpacity(0.8)),
                     ),
@@ -157,7 +172,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text("Play"),
+                  label: const Text('Play'),
                   onPressed: _loading ? null : _loadVideo,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
@@ -168,11 +183,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                     ),
                   ),
                 ),
-              ],
+              }.toList(),
             ),
             const SizedBox(height: 20),
 
-            // ===== PLAYER AREA =====
+            // ---- Player area
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -194,52 +209,33 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
             ),
             const SizedBox(height: 20),
 
-            // ===== CONTROLS =====
+            // ---- Controls
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
                   icon: const Icon(Icons.pause),
                   color: accent,
-                  onPressed: () {
-                    debugPrint("⏸ Pause");
-                    if (_isYouTube) {
-                      _ytController?.pauseVideo();
-                    } else {
-                      _fileController?.pause();
-                    }
-                  },
+                  onPressed: () => _controller?.pause(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.play_arrow),
                   color: accent,
-                  onPressed: () {
-                    debugPrint("▶ Play");
-                    if (_isYouTube) {
-                      _ytController?.playVideo();
-                    } else {
-                      _fileController?.play();
-                    }
-                  },
+                  onPressed: () => _controller?.play(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.stop),
                   color: accent,
-                  onPressed: () {
-                    debugPrint("⏹ Stop");
-                    if (_isYouTube) {
-                      _ytController?.stopVideo();
-                    } else {
-                      _fileController?.pause();
-                      _fileController?.seekTo(Duration.zero);
-                    }
+                  onPressed: () async {
+                    await _controller?.pause();
+                    await _controller?.seekTo(Duration.zero);
                   },
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton.icon(
                   onPressed: _generateInviteLink,
                   icon: const Icon(Icons.share),
-                  label: const Text("Invite"),
+                  label: const Text('Invite'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.black,
@@ -255,11 +251,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
             if (_inviteLink != null) ...[
               const SizedBox(height: 8),
               SelectableText(
-                "Invite Link: $_inviteLink",
+                'Invite Link: $_inviteLink',
                 style: TextStyle(
                   color: accent,
                   fontWeight: FontWeight.bold,
-                  fontFamily: "monospace",
+                  fontFamily: 'monospace',
                 ),
               ),
             ],
@@ -269,31 +265,19 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     );
   }
 
-  // 🔹 PLAYER BUILDER
   Widget _buildPlayer(Color textColor) {
     if (_videoUrl == null) {
       return Text(
-        "Paste a URL and press Play",
+        'Paste a URL and press Play',
         style: TextStyle(color: textColor),
       );
     }
-
-    if (_isYouTube && _ytController != null) {
-      debugPrint("📺 Rendering YouTube player...");
-      return YoutubePlayer(controller: _ytController!, aspectRatio: 16 / 9);
-    }
-
-    if (_fileController != null && _fileController!.value.isInitialized) {
-      debugPrint(
-        "📼 Rendering file player (${_fileController!.value.duration.inSeconds}s)",
-      );
+    if (_controller != null && _controller!.value.isInitialized) {
       return AspectRatio(
-        aspectRatio: _fileController!.value.aspectRatio,
-        child: VideoPlayer(_fileController!),
+        aspectRatio: _controller!.value.aspectRatio,
+        child: VideoPlayer(_controller!),
       );
     }
-
-    debugPrint("⏳ Waiting for video init...");
     return const CircularProgressIndicator();
   }
 }
