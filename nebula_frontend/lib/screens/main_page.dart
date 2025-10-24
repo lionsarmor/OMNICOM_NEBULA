@@ -93,6 +93,12 @@ class MainPage extends StatelessWidget {
                         isDark,
                       ),
                       _navButton(
+                        Icons.group_rounded,
+                        "Buddies",
+                        accent,
+                        isDark,
+                      ),
+                      _navButton(
                         Icons.chat_rounded,
                         "Messages",
                         accent,
@@ -106,12 +112,6 @@ class MainPage extends StatelessWidget {
                         isDark,
                         onTap: () =>
                             Navigator.pushNamed(context, '/watchparty'),
-                      ),
-                      _navButton(
-                        Icons.group_rounded,
-                        "Buddies",
-                        accent,
-                        isDark,
                       ),
                       _navButton(
                         Icons.memory_rounded,
