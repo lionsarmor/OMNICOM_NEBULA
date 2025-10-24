@@ -171,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? AppColors
                                   .accentDark // neon yellow for sun in dark mode
                             : AppColors
-                                  .primaryLightDark, // deep navy for moon in light mode (visible)
+                                  .accentDark, // deep navy for moon in light mode (visible)
                       ),
                       tooltip: isDark
                           ? "Switch to Light Mode"
