@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class MainPage extends StatelessWidget {
   final bool darkMode;
   final VoidCallback onToggleTheme;
+  final String username;
 
   const MainPage({
     super.key,
     required this.darkMode,
     required this.onToggleTheme,
+    required this.username,
   });
 
   void _logout(BuildContext context) {
@@ -16,48 +18,40 @@ class MainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = darkMode
-        ? const Color(0xFF0C0F1A)
-        : const Color(0xFFE4E9F4);
-    final sidebarColor = darkMode
-        ? const Color(0xFF141B2E)
-        : const Color(0xFFD9E4FF);
-    final topBarColor = darkMode
-        ? const Color(0xFF003355)
-        : const Color(0xFFCCE0FF);
+    // === COLORS ===
+    final neonYellow = const Color(0xFFFFEA00);
+    final bgColor = darkMode ? const Color(0xFF0C0F1A) : const Color(0xFFE4E9F4);
+    final sidebarColor = darkMode ? const Color(0xFF141B2E) : const Color(0xFFD9E4FF);
+    final topBarColor = darkMode ? const Color(0xFF1A1F33) : const Color(0xFFCCE0FF);
     final textColor = darkMode ? Colors.white70 : Colors.black87;
-    final accent = darkMode ? const Color(0xFF00E5FF) : const Color(0xFF0044AA);
+    final accent = neonYellow;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Row(
         children: [
-          // LEFT SIDEBAR — retro AOL buddy list + nav
+          // ===== LEFT SIDEBAR =====
           Container(
             width: 220,
             decoration: BoxDecoration(
               color: sidebarColor,
               border: Border(
                 right: BorderSide(
-                  color: darkMode
-                      ? Colors.cyan.shade900
-                      : Colors.blueGrey.shade200,
+                  color: neonYellow.withOpacity(0.2),
                   width: 1.5,
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: darkMode
-                      ? Colors.cyanAccent.withOpacity(0.1)
-                      : Colors.black12,
-                  blurRadius: 10,
+                  color: neonYellow.withOpacity(0.05),
+                  blurRadius: 12,
                   offset: const Offset(2, 0),
                 ),
               ],
             ),
             child: Column(
               children: [
-                // Header Logo
+                // ===== HEADER LOGO =====
                 Container(
                   height: 60,
                   width: double.infinity,
@@ -65,8 +59,8 @@ class MainPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: darkMode
-                          ? [const Color(0xFF004466), const Color(0xFF001020)]
-                          : [const Color(0xFF66A3FF), const Color(0xFFE4F0FF)],
+                          ? [const Color(0xFF3E3A00), const Color(0xFF000000)]
+                          : [const Color(0xFFFFF59D), const Color(0xFFFFFDE7)],
                     ),
                   ),
                   alignment: Alignment.centerLeft,
@@ -78,80 +72,109 @@ class MainPage extends StatelessWidget {
                       fontSize: 18,
                       letterSpacing: 1.5,
                       fontFamily: 'Orbitron',
+                      shadows: [
+                        Shadow(
+                          color: neonYellow.withOpacity(0.8),
+                          blurRadius: 8,
+                        ),
+                      ],
                     ),
                   ),
                 ),
 
-                // Navigation Items
+                // ===== NAVIGATION ITEMS =====
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.only(top: 10),
                     children: [
                       _navButton(
-                        Icons.dashboard,
-                        "Dashboard",
+                        Icons.dashboard_rounded,
+                        "News",
                         accent,
                         darkMode,
+                        onTap: () {
+                          // TODO: Implement News page route
+                        },
                       ),
                       _navButton(
                         Icons.chat_rounded,
                         "Messages",
                         accent,
                         darkMode,
-                      ),
-                      _navButton(
-                        Icons.people_alt_rounded,
-                        "Contacts",
-                        accent,
-                        darkMode,
+                        onTap: () {
+                          // TODO: Implement Messages page route
+                        },
                       ),
                       _navButton(
                         Icons.tv_rounded,
                         "Channels",
                         accent,
                         darkMode,
+                        onTap: () {
+                          // TODO: Implement Channels page route
+                        },
                       ),
                       _navButton(
-                        Icons.storage_rounded,
-                        "Servers",
+                        Icons.ondemand_video_rounded,
+                        "Watch Party",
                         accent,
                         darkMode,
+                        onTap: () {
+                          Navigator.pushNamed(context, '/watchparty');
+                        },
                       ),
                       _navButton(
-                        Icons.settings_rounded,
-                        "Settings",
+                        Icons.group_rounded,
+                        "Buddies",
                         accent,
                         darkMode,
+                        onTap: () {
+                          // TODO: Implement Buddies page route
+                        },
                       ),
                       _navButton(
-                        Icons.terminal_rounded,
-                        "System Log",
+                        Icons.memory_rounded,
+                        "System",
                         accent,
                         darkMode,
+                        onTap: () {
+                          // TODO: Implement System page route
+                        },
                       ),
                     ],
                   ),
                 ),
 
-                // Bottom Profile + Status
+                // ===== SIDEBAR FOOTER =====
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10, top: 4),
+                  child: Text(
+                    "v0.9.2 — Nebula",
+                    style: TextStyle(
+                      color: neonYellow.withOpacity(0.6),
+                      fontSize: 11,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+
+                // ===== BOTTOM PROFILE =====
                 Container(
                   height: 70,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: darkMode
-                        ? const Color(0xFF0E1422)
-                        : const Color(0xFFDCE6F9),
+                    color:
+                        darkMode ? const Color(0xFF0E1422) : const Color(0xFFDCE6F9),
                     border: Border(
                       top: BorderSide(
-                        color: darkMode
-                            ? Colors.cyanAccent.withOpacity(0.15)
-                            : Colors.blueGrey.shade200,
+                        color: neonYellow.withOpacity(0.2),
                       ),
                     ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Profile Avatar + Name + Status
                       Row(
                         children: [
                           Container(
@@ -159,11 +182,9 @@ class MainPage extends StatelessWidget {
                             height: 34,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: darkMode
-                                  ? Colors.cyanAccent.withOpacity(0.3)
-                                  : Colors.blueGrey.shade300,
+                              color: neonYellow.withOpacity(0.25),
                               border: Border.all(
-                                color: accent.withOpacity(0.5),
+                                color: neonYellow.withOpacity(0.8),
                                 width: 2,
                               ),
                             ),
@@ -179,19 +200,18 @@ class MainPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "User_42A",
+                                username.isNotEmpty ? username : "Guest",
                                 style: TextStyle(
                                   color: textColor,
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 "Online",
                                 style: TextStyle(
-                                  color: darkMode
-                                      ? Colors.greenAccent
-                                      : Colors.green.shade700,
+                                  color: neonYellow,
                                   fontSize: 11,
                                 ),
                               ),
@@ -211,27 +231,30 @@ class MainPage extends StatelessWidget {
             ),
           ),
 
-          // MAIN PANEL
+          // ===== MAIN PANEL =====
           Expanded(
             child: Column(
               children: [
-                // TOP BAR
+                // ===== TOP BAR =====
                 Container(
                   height: 60,
                   decoration: BoxDecoration(
                     color: topBarColor,
                     border: Border(
                       bottom: BorderSide(
-                        color: darkMode
-                            ? Colors.cyanAccent.withOpacity(0.1)
-                            : Colors.blueGrey.shade200,
+                        color: neonYellow.withOpacity(0.1),
                       ),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: neonYellow.withOpacity(0.05),
+                        offset: const Offset(0, 3),
+                        blurRadius: 6,
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -253,14 +276,14 @@ class MainPage extends StatelessWidget {
                               darkMode
                                   ? Icons.wb_sunny_rounded
                                   : Icons.dark_mode_rounded,
-                              color: textColor,
+                              color: neonYellow,
                             ),
                             onPressed: onToggleTheme,
                           ),
                           const SizedBox(width: 10),
                           IconButton(
                             tooltip: 'Log out',
-                            icon: Icon(Icons.logout_rounded, color: textColor),
+                            icon: Icon(Icons.logout_rounded, color: neonYellow),
                             onPressed: () => _logout(context),
                           ),
                         ],
@@ -269,7 +292,7 @@ class MainPage extends StatelessWidget {
                   ),
                 ),
 
-                // MAIN CONTENT AREA
+                // ===== MAIN CONTENT =====
                 Expanded(
                   child: Container(
                     width: double.infinity,
@@ -277,8 +300,8 @@ class MainPage extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: darkMode
                             ? [
-                                const Color(0xFF0B1120),
-                                const Color(0xFF091020),
+                                const Color(0xFF0B0E15),
+                                const Color(0xFF0C0F20),
                                 const Color(0xFF070A12),
                               ]
                             : [
@@ -300,6 +323,12 @@ class MainPage extends StatelessWidget {
                           height: 1.6,
                           fontFamily: 'monospace',
                           letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              color: neonYellow.withOpacity(0.4),
+                              blurRadius: 12,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -313,34 +342,31 @@ class MainPage extends StatelessWidget {
     );
   }
 
-  Widget _navButton(IconData icon, String label, Color accent, bool darkMode) {
+  // ===== NAV BUTTON WIDGET =====
+  Widget _navButton(
+    IconData icon,
+    String label,
+    Color accent,
+    bool darkMode, {
+    VoidCallback? onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(6),
-        hoverColor: darkMode
-            ? accent.withOpacity(0.15)
-            : accent.withOpacity(0.1),
+        hoverColor: accent.withOpacity(0.15),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: darkMode
-                  ? Colors.cyanAccent.withOpacity(0.1)
-                  : Colors.blueGrey.withOpacity(0.2),
+              color: accent.withOpacity(0.2),
             ),
           ),
           child: Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: darkMode
-                    ? Colors.cyanAccent
-                    : Colors.blueAccent.shade700,
-              ),
+              Icon(icon, size: 20, color: accent),
               const SizedBox(width: 10),
               Text(
                 label,

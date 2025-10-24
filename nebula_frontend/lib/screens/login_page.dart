@@ -29,8 +29,11 @@ class _LoginPageState extends State<LoginPage> {
   String? _status;
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    _audio.dispose();
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _login() async {
@@ -46,7 +49,6 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (res.containsKey('error')) {
-        // ❌ backend responded with error
         setState(() {
           _showAnim = true;
           _errorMode = true;
@@ -58,9 +60,20 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (res.containsKey('token')) {
-        // ✅ Save JWT token locally
+        // Save token
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', res['token']);
+
+        // Optionally fetch profile for username
+        String username = _userCtrl.text.trim();
+        try {
+          final profile = await ApiService.getProfile(res['token']);
+          if (profile['username'] is String && (profile['username'] as String).isNotEmpty) {
+            username = profile['username'];
+          }
+        } catch (_) {
+          // ignore profile fetch failure; fall back to typed username
+        }
 
         setState(() {
           _status = "Access channel locked. Initiating uplink…";
@@ -69,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
           _loading = false;
         });
 
-        // Timed sound sequence
+        // SFX sequence
         Future.delayed(const Duration(milliseconds: 250), () {
           _audio.play(AssetSource('sfx/laser_charge.wav'));
         });
@@ -78,6 +91,11 @@ class _LoginPageState extends State<LoginPage> {
         });
         Future.delayed(const Duration(milliseconds: 2200), () {
           _audio.play(AssetSource('sfx/impact.wav'));
+        });
+
+        // Navigate to main after animation completes
+        Future.delayed(const Duration(milliseconds: 2400), () {
+          _goMain(username);
         });
       } else {
         setState(() {
@@ -99,27 +117,17 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _goMain() {
-    Navigator.of(context).pushReplacementNamed('/main');
-  }
-
-  @override
-  void dispose() {
-    _audio.dispose();
-    _userCtrl.dispose();
-    _passCtrl.dispose();
-    super.dispose();
+  void _goMain(String username) {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed('/main', arguments: username);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = widget.darkMode;
     final bgColor = isDark ? const Color(0xFF0C0F1A) : const Color(0xFFEAF3FF);
-    final panelColor = isDark
-        ? const Color(0xFF171C28)
-        : const Color(0xFFE0E6F2);
+    final panelColor = isDark ? const Color(0xFF171C28) : const Color(0xFFE0E6F2);
     final textColor = isDark ? Colors.white : Colors.black87;
-
     final headerGradient = isDark
         ? const LinearGradient(colors: [Color(0xFF004466), Color(0xFF000820)])
         : const LinearGradient(colors: [Color(0xFF33A0FF), Color(0xFF005CBB)]);
@@ -129,17 +137,13 @@ class _LoginPageState extends State<LoginPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // === HEADER ===
+          // HEADER
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: headerGradient,
               boxShadow: const [
-                BoxShadow(
-                  color: Colors.black54,
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
-                ),
+                BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1)),
               ],
             ),
             child: Row(
@@ -169,15 +173,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(width: 12),
                     IconButton(
-                      icon: Icon(
-                        isDark
-                            ? Icons.wb_sunny_rounded
-                            : Icons.dark_mode_rounded,
-                        color: Colors.white,
-                      ),
-                      tooltip: isDark
-                          ? "Switch to Light Mode"
-                          : "Switch to Dark Mode",
+                      icon: Icon(isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded, color: Colors.white),
+                      tooltip: isDark ? "Switch to Light Mode" : "Switch to Dark Mode",
                       onPressed: widget.onToggleTheme,
                     ),
                   ],
@@ -186,7 +183,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // === BODY ===
+          // BODY
           Expanded(
             child: Center(
               child: AnimatedSwitcher(
@@ -195,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
                     ? NebulaLoginAnimation(
                         key: const ValueKey('anim'),
                         errorMode: _errorMode,
-                        onComplete: _goMain,
+                        onComplete: () => _goMain(_userCtrl.text.trim()),
                         onErrorEnd: () async {
                           setState(() {
                             _showAnim = false;
@@ -204,17 +201,12 @@ class _LoginPageState extends State<LoginPage> {
                           });
                         },
                       )
-                    : _buildLoginForm(
-                        isDark,
-                        panelColor,
-                        textColor,
-                        headerGradient,
-                      ),
+                    : _buildLoginForm(isDark, panelColor, textColor, headerGradient),
               ),
             ),
           ),
 
-          // === FOOTER ===
+          // FOOTER
           Padding(
             padding: const EdgeInsets.only(bottom: 12, top: 6),
             child: Column(
@@ -259,14 +251,10 @@ class _LoginPageState extends State<LoginPage> {
       decoration: BoxDecoration(
         color: panelColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade200,
-        ),
+        border: Border.all(color: isDark ? Colors.blueGrey.shade800 : Colors.blueGrey.shade200),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.blue.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.3),
+            color: isDark ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -321,24 +309,15 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isDark
-                  ? const Color(0xFF0066CC)
-                  : const Color(0xFFFFD700),
+              backgroundColor: isDark ? const Color(0xFF0066CC) : const Color(0xFFFFD700),
               foregroundColor: isDark ? Colors.white : Colors.black,
               elevation: 3,
               padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.1,
-              ),
+              textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
             ),
             onPressed: _loading ? null : _login,
             child: _loading
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2.2),
-                  )
+                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2.2))
                 : const Text("Sign On"),
           ),
           const SizedBox(height: 12),
@@ -351,9 +330,7 @@ class _LoginPageState extends State<LoginPage> {
             onPressed: () => Navigator.pushNamed(context, '/register'),
             child: Text(
               "Create New Nebula ID",
-              style: TextStyle(
-                color: isDark ? Colors.blue[200] : Colors.blue[800],
-              ),
+              style: TextStyle(color: isDark ? Colors.blue[200] : Colors.blue[800]),
             ),
           ),
         ],
