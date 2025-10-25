@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+
+// === Screens ===
 import 'screens/login_page.dart';
 import 'screens/main_page.dart';
 import 'screens/register_page.dart';
 import 'screens/watch_party_page.dart';
-import 'theme/app_theme.dart'; // ✅ central theme
-import 'theme/app_colors.dart'; // ✅ direct color access if needed
+
+// === Theme ===
+import 'theme/app_theme.dart';
+import 'theme/app_colors.dart';
 
 void main() {
+  // ✅ Required fix for desktop builds (Linux/Windows/macOS)
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 🧠 Safe cross-platform WebView initialization
+  // (No SurfaceAndroidWebView, since it's Android-only)
+  try {
+    if (WebViewPlatform.instance == null) {
+      WebViewPlatform.instance = WebViewPlatform.instance;
+    }
+  } catch (_) {
+    // WebViewPlatform may already be initialized on mobile
+  }
+
   runApp(const NebulaApp());
 }
 
@@ -28,10 +46,12 @@ class _NebulaAppState extends State<NebulaApp> {
       debugShowCheckedModeBanner: false,
       title: 'Nebula by OMNICOM',
 
-      // ✅ Pulls directly from centralized AppTheme
+      // ✅ Centralized app theme
       theme: _darkMode ? AppTheme.dark : AppTheme.light,
 
       initialRoute: '/login',
+
+      // === Route definitions ===
       routes: {
         '/login': (context) =>
             LoginPage(onToggleTheme: _toggleTheme, darkMode: _darkMode),
@@ -40,6 +60,7 @@ class _NebulaAppState extends State<NebulaApp> {
         '/watchparty': (context) => const WatchPartyPage(),
       },
 
+      // === Dynamic routes (e.g. /main?user=xyz) ===
       onGenerateRoute: (settings) {
         if (settings.name == '/main') {
           final arg = settings.arguments;
@@ -63,7 +84,7 @@ class _NebulaAppState extends State<NebulaApp> {
           );
         }
 
-        // Default fallback 404
+        // Default 404 fallback
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
             body: Center(
