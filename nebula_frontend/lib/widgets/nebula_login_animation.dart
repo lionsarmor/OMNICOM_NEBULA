@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
 /// 🪐 NEBULA LOGIN ANIMATION 2.0
 /// - Green Star Wars–style laser beam from C64 to Moon PNG.

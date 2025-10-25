@@ -1,41 +1,59 @@
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:async';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import '../config.dart';
 
 class WatchPartySocket {
-  IO.Socket? socket;
-  Function(String type, dynamic payload)? onSync;
+  io.Socket? _socket;
 
-  void connect(String roomId, {String host = "http://localhost:4000"}) {
-    socket = IO.io(
-      "$host/watchparty",
-      IO.OptionBuilder()
+  void connect() {
+    _socket ??= io.io(
+      kBackendWsBase,
+      io.OptionBuilder()
           .setTransports(['websocket'])
-          .disableAutoConnect()
+          .enableAutoConnect()
           .build(),
     );
-
-    socket!.onConnect((_) {
-      print("🔌 Connected to WatchParty");
-      socket!.emit("join_room", roomId);
-    });
-
-    socket!.on("sync_action", (data) {
-      if (onSync != null) onSync!(data["type"], data["payload"]);
-    });
-
-    socket!.onDisconnect((_) => print("🛑 Disconnected from WatchParty"));
-    socket!.connect();
   }
 
-  void send(String roomId, String type, [dynamic payload]) {
-    socket?.emit("sync_action", {
-      "roomId": roomId,
-      "type": type,
-      "payload": payload,
-    });
+  bool get connected => _socket?.connected == true;
+
+  void on(String event, Function(dynamic) handler) {
+    _socket?.on(event, handler);
+  }
+
+  void off(String event) {
+    _socket?.off(event);
+  }
+
+  void joinRoom(String roomId) {
+    connect();
+    _socket?.emit('wp:join', {'roomId': roomId});
+  }
+
+  void emitUrl(String roomId, String url) {
+    _socket?.emit('wp:url', {'roomId': roomId, 'url': url});
+  }
+
+  void emitPlay(String roomId) {
+    _socket?.emit('wp:play', {'roomId': roomId});
+  }
+
+  void emitPause(String roomId) {
+    _socket?.emit('wp:pause', {'roomId': roomId});
+  }
+
+  void emitSeek(String roomId, double seconds) {
+    _socket?.emit('wp:seek', {'roomId': roomId, 'position': seconds});
+  }
+
+  void emitState(String roomId, Map<String, dynamic> state) {
+    _socket?.emit('wp:state', {'roomId': roomId, 'state': state});
   }
 
   void disconnect() {
-    socket?.disconnect();
-    socket = null;
+    _socket?.dispose();
+    _socket = null;
   }
 }
+
+final watchPartySocket = WatchPartySocket();

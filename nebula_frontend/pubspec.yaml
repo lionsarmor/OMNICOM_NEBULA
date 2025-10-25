@@ -1,7 +1,6 @@
 name: omnicom_frontend
 description: "Nebula by OMNICOM — a retro-synthwave login and terminal interface."
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -11,30 +10,46 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # === CORE UI & ICONS ===
+  # Core
   cupertino_icons: ^1.0.8
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
 
-  # === NETWORK & STORAGE ===
-  http: ^1.5.0
-  shared_preferences: ^2.3.3
+  # Media (unified player)
+  media_kit: ^1.1.10
+  media_kit_video: ^1.2.5
+  # OS media libs — include ONLY the one you’re building for to avoid resolver loops.
+  media_kit_libs_linux: ^1.1.4   # ✅ current target (Linux)
+  # media_kit_libs_windows: ^1.1.4
+  # media_kit_libs_macos: ^1.1.4
+  # media_kit_libs_android_video: ^1.4.6
+  # media_kit_libs_ios_video: ^1.1.4
 
-  # === AUDIO / VIDEO / MEDIA ===
-  audioplayers: ^6.5.1
-  video_player: ^2.9.2
-  webview_flutter: ^4.9.0
-  file_picker: ^8.1.3
+  # File picking
+  file_picker: ^6.1.1
 
-  # === REAL-TIME SYNC (Watch Party) ===
-  socket_io_client: ^2.0.3+1
+  # Web view for non-Linux YouTube
+  flutter_inappwebview: ^6.1.5
+
+  # External browser fallback (Linux YouTube or troubleshooting)
+  url_launcher: ^6.3.1
+
+  # Realtime (watch party signalling)
+  socket_io_client: ^2.0.0
+
+  # Audio cues (unchanged)
+  audioplayers: ^5.2.1
+
+  # If you still use video_player elsewhere, keep it; otherwise you can remove:
+  # video_player: ^2.7.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
-
   assets:
     - assets/images/
     - assets/sfx/
