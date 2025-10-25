@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../theme/app_colors.dart';
 import '../services/watchparty_socket.dart';
 
@@ -22,6 +24,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   String? _currentUrl;
   String? _roomLink;
   String? _roomId;
+  bool _autoJoined = false;
 
   VideoPlayerController? _fileController;
   WebViewController? _ytWebView;
@@ -29,7 +32,65 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   bool _loading = false;
   String? _error;
 
-  // ---------- Helpers ----------
+  // ---------- INIT ----------
+  @override
+  void initState() {
+    super.initState();
+    _tryAutoJoinFromUrl();
+  }
+
+  Future<void> _tryAutoJoinFromUrl() async {
+    if (_autoJoined) return;
+
+    try {
+      // Flutter web: check initial route with window.location
+      if (kIsWeb) {
+        final uri = Uri.base;
+        final room = uri.queryParameters['room'];
+        if (room != null && room.isNotEmpty) {
+          _autoJoined = true;
+          _joinExistingParty(room);
+        }
+      } else {
+        // For desktop/mobile builds (future deep link support)
+        // Example placeholder: could parse args or method channels
+      }
+    } catch (e) {
+      debugPrint('⚠️ Auto-join failed: $e');
+    }
+  }
+
+  // ---------- SOCKET & SYNC ----------
+  void _joinExistingParty(String roomId) {
+    final link = "https://watch.omnicom.online/?room=$roomId";
+    setState(() {
+      _roomId = roomId;
+      _roomLink = link;
+    });
+
+    _socket.connect(roomId, host: "http://localhost:4000");
+    _socket.onSync = (type, payload) {
+      if (type == "PLAY") _fileController?.play();
+      if (type == "PAUSE") _fileController?.pause();
+      if (type == "SEEK") {
+        final ms = payload is int
+            ? payload
+            : int.tryParse(payload.toString()) ?? 0;
+        _fileController?.seekTo(Duration(milliseconds: ms));
+      }
+    };
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Joined Watch Party #$roomId')));
+  }
+
+  void _createNewParty() {
+    final randomId = Random().nextInt(999999).toString().padLeft(6, '0');
+    _joinExistingParty(randomId);
+  }
+
+  // ---------- MEDIA ----------
   void _disposePlayers() {
     try {
       _fileController?.removeListener(_onVideoTick);
@@ -68,7 +129,6 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
   }
 
-  // ---------- Video Loader ----------
   Future<void> _loadVideo() async {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
@@ -116,7 +176,6 @@ iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:0;}
     }
   }
 
-  // ---------- Local File Picker ----------
   Future<void> _pickLocalFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(type: FileType.video);
@@ -145,26 +204,22 @@ iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:0;}
     }
   }
 
-  // ---------- Watch Party ----------
-  void _createNewParty() {
-    final randomId = Random().nextInt(999999).toString().padLeft(6, '0');
-    final link = "https://watch.omnicom.online/?room=$randomId";
-    setState(() {
-      _roomId = randomId;
-      _roomLink = link;
-    });
+  // ---------- PLAYER SYNC ----------
+  void _playVideo() {
+    _fileController?.play();
+    if (_roomId != null) _socket.send(_roomId!, "PLAY");
+  }
 
-    _socket.connect(randomId, host: "http://localhost:4000");
-    _socket.onSync = (type, payload) {
-      if (type == "PLAY") _fileController?.play();
-      if (type == "PAUSE") _fileController?.pause();
-      if (type == "SEEK") {
-        final ms = payload is int
-            ? payload
-            : int.tryParse(payload.toString()) ?? 0;
-        _fileController?.seekTo(Duration(milliseconds: ms));
-      }
-    };
+  void _pauseVideo() {
+    _fileController?.pause();
+    if (_roomId != null) _socket.send(_roomId!, "PAUSE");
+  }
+
+  void _seekVideo(Duration position) {
+    _fileController?.seekTo(position);
+    if (_roomId != null) {
+      _socket.send(_roomId!, "SEEK", position.inMilliseconds);
+    }
   }
 
   Future<void> _copyInviteLink() async {
@@ -329,9 +384,18 @@ iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:0;}
       return WebViewWidget(controller: _ytWebView!);
     }
     if (_fileController != null && _fileController!.value.isInitialized) {
-      return AspectRatio(
-        aspectRatio: _fileController!.value.aspectRatio,
-        child: VideoPlayer(_fileController!),
+      return GestureDetector(
+        onTap: () {
+          if (_fileController!.value.isPlaying) {
+            _pauseVideo();
+          } else {
+            _playVideo();
+          }
+        },
+        child: AspectRatio(
+          aspectRatio: _fileController!.value.aspectRatio,
+          child: VideoPlayer(_fileController!),
+        ),
       );
     }
     return const CircularProgressIndicator();

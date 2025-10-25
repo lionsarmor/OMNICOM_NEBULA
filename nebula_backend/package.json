@@ -2,19 +2,22 @@
   "name": "nebula-backend",
   "version": "1.0.0",
   "type": "module",
+  "main": "src/index.js",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "dev": "nodemon --legacy-watch src/index.js src/ws.js"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.5"
+    "pg": "^8.16.3",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.10"
   }
 }

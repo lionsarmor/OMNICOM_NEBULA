@@ -1,16 +1,27 @@
 import express from "express";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../db.js";
 
+// Try to load bcrypt; fall back to bcryptjs if native build fails
+let bcrypt;
+try {
+  bcrypt = await import("bcrypt");
+} catch {
+  console.warn("⚠️  bcrypt native module not found, falling back to bcryptjs");
+  bcrypt = await import("bcryptjs");
+}
+
 const router = express.Router();
+
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 const JWT_EXPIRES = process.env.JWT_EXPIRES || "2h";
 
+// === UTIL ===
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
+// === MIDDLEWARE ===
 export function verifyToken(req, res, next) {
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -32,6 +43,7 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Username and password required" });
 
     const hash = await bcrypt.hash(password, 10);
+
     const { rows } = await pool.query(
       `INSERT INTO users (username, password)
        VALUES ($1, $2)
@@ -45,7 +57,7 @@ router.post("/register", async (req, res) => {
 
     return res.json({ ok: true, user: rows[0] });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Register error:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
@@ -61,6 +73,7 @@ router.post("/login", async (req, res) => {
       "SELECT id, username, password FROM users WHERE username = $1",
       [username]
     );
+
     const user = rows[0];
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
@@ -70,7 +83,7 @@ router.post("/login", async (req, res) => {
     const token = signToken({ id: user.id, username: user.username });
     return res.json({ token });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Login error:", e);
     return res.status(500).json({ error: "Server error" });
   }
 });
@@ -89,7 +102,7 @@ router.get("/profile", (req, res) => {
   }
 });
 
-// === ME (middleware) ===
+// === ME (middleware verified) ===
 router.get("/me", verifyToken, (req, res) => {
   return res.json({ user: req.user });
 });

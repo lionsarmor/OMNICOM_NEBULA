@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
+
 import authRoutes from "./routes/auth.js";
 import { attachWS, attachWatchParty } from "./ws.js";
 
@@ -13,8 +14,8 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN || "*",
-    methods: ["GET", "POST"],
-  },
+    methods: ["GET", "POST"]
+  }
 });
 
 app.use(express.json());
@@ -28,7 +29,7 @@ app.use("/api", authRoutes);
 
 // --- WebSockets ---
 attachWS(io);          // existing chat system
-attachWatchParty(io);  // 🎬 new Watch Party sync
+attachWatchParty(io);  // 🎬 watch party sync namespace
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
