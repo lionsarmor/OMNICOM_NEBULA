@@ -77075,7 +77075,7 @@ s.a8o(A.aie(r,B.kZ,!1,null),new A.a14())},
 T(a0){var s,r,q,p,o,n,m=this,l=null,k="Settings",j=m.c,i=j?B.lK:B.BI,h=j?B.CD:B.BA,g=j?B.Bq:B.C5,f=j?B.G:B.C,e=j?B.md:B.m7,d=j?B.Cd:B.cX,c=A.c([new A.cT(0,B.bd,j?A.a4(B.d.af(25.5),B.az.n()>>>16&255,B.az.n()>>>8&255,B.az.n()&255):B.ma,B.Ji,10)],t.sq),b=t.t_,a=j?A.c([B.il,B.C_],b):A.c([B.Ck,B.CE],b)
 a=A.fV(B.c_,A.dr("\ud83d\udef0\ufe0f  OMNICOM",l,l,l,A.cl(l,l,f,l,l,l,l,l,"Orbitron",l,l,18,l,l,B.b5,l,l,!0,l,1.5,l,l,l,l,l,l),l,l),B.D,new A.cS(l,l,l,l,l,new A.fv(B.c_,B.cQ,B.aS,a,l,l),B.ao),60,l,l,B.DN,1/0)
 s=t.E
-r=A.c([m.mG(B.Eh,"Dashboard",e,j),m.mG(B.El,"Messages",e,j),m.mG(B.Eo,"Contacts",e,j),m.mG(B.Er,"Channels",e,j),m.mG(B.Eq,"Servers",e,j),m.mG(B.Ep,k,e,j),m.mG(B.Es,"System Log",e,j)],s)
+r=A.c([m.mG(B.Eh,"Dashboard",e,j),m.mG(B.El,"Messages",e,j),m.mG(B.Eo,"Contacts",e,j),m.mG(B.Er,"Channels",e,j),m.mG(B.Eq,"Watch Party",e,j),m.mG(B.Ep,k,e,j),m.mG(B.Es,"System Log",e,j)],s)
 q=A.ad([null,0],t.LO,t.S)
 r=A.YS(new A.Hw(new A.a9q(!0,!0,!0,r,q),B.DJ,B.bp,!1,l,l,B.zg,!1,l,7,B.aG,l,l,B.ab,B.ax,l))
 q=j?B.Bg:B.lR
