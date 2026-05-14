@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -30,9 +29,7 @@ class _UniversalPlayerState extends State<UniversalPlayer> {
 
   Future<void> _open(String src) async {
     final isLocal = !src.startsWith('http');
-    final media = isLocal
-        ? Media('file://${File(src).absolute.path}')
-        : Media(src);
+    final media = isLocal ? Media(Uri.file(src).toString()) : Media(src);
     await _player.open(media, play: true);
   }
 

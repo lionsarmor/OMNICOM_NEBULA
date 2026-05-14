@@ -23566,7 +23566,7 @@ a14:function a14(){},
 a16:function a16(){},
 a17:function a17(a,b){this.a=a
 this.b=b},
-a15:function a15(){},
+a15:function a15(a){this.a=a},
 oi:function oi(a,b,c){this.c=a
 this.d=b
 this.a=c},
@@ -24473,7 +24473,7 @@ break}case 1:return A.I(q,r)}})
 return A.J($async$Uj,r)},
 Uk(a,b){var s=0,r=A.K(t.a),q,p,o,n,m
 var $async$Uk=A.G(function(c,d){if(c===1)return A.H(d,r)
-while(true)switch(s){case 0:p=A.eM("https://api.omnicom.online/api/login",0,null)
+while(true)switch(s){case 0:p=A.eM("http://localhost:4400/api/login",0,null)
 o=t.N
 n=A.ad(["Content-Type","application/json"],o,o)
 m=A
@@ -24486,7 +24486,7 @@ case 1:return A.I(q,r)}})
 return A.J($async$Uk,r)},
 Ul(a,b){var s=0,r=A.K(t.a),q,p,o,n,m
 var $async$Ul=A.G(function(c,d){if(c===1)return A.H(d,r)
-while(true)switch(s){case 0:p=A.eM("https://api.omnicom.online/api/register",0,null)
+while(true)switch(s){case 0:p=A.eM("http://localhost:4400/api/register",0,null)
 o=t.N
 n=A.ad(["Content-Type","application/json"],o,o)
 m=A
@@ -77090,7 +77090,7 @@ c=A.fV(l,A.lC(A.c([B.Sh,A.lC(A.c([A.qj(l,l,A.nx(j?B.jr:B.jq,f,l,l),l,l,m.d,l,l,a
 j=j?A.c([B.C6,B.BX,B.Cx],b):A.c([B.Cq,B.lR,B.Cp],b)
 return A.anB(l,i,A.lC(A.c([d,A.YS(A.kQ(A.c([c,A.YS(A.fV(l,A.kM(A.dr("\ud83d\udef0\ufe0f  Nebula Core Online\nWelcome to the OMNICOM main console.",l,l,l,A.cl(l,l,f,l,l,l,l,l,"monospace",l,l,20,l,l,l,l,1.6,!0,l,0.5,l,l,l,l,l,l),B.eF,l),l,l),B.D,new A.cS(l,l,l,l,l,new A.fv(B.hY,B.hX,B.aS,j,l,l),B.ao),l,l,l,l,1/0))],s),B.a7,B.ar,B.aO))],s),B.a7,B.ar,B.aO))},
 mG(a,b,c,d){var s=null,r=A.je(6),q=d?A.a4(38,c.n()>>>16&255,c.n()>>>8&255,c.n()&255):A.a4(B.d.af(25.5),c.n()>>>16&255,c.n()>>>8&255,c.n()&255),p=A.je(6),o=A.V6(d?A.a4(B.d.af(25.5),B.az.n()>>>16&255,B.az.n()>>>8&255,B.az.n()&255):A.a4(51,B.jP.n()>>>16&255,B.jP.n()>>>8&255,B.jP.n()&255),1),n=A.nx(a,d?B.az:B.CC,s,20)
-return new A.dW(B.mD,A.arb(!1,r,!0,A.fV(s,A.lC(A.c([n,B.yb,A.dr(b,s,s,s,A.cl(s,s,d?B.G:B.C,s,s,s,s,s,s,s,s,14,s,s,B.S,s,s,!0,s,s,s,s,s,s,s,s),s,s)],t.E),B.a7,B.ar,B.aO),B.D,new A.cS(s,s,o,p,s,s,B.ao),s,s,s,B.DO,s),s,!0,s,s,q,s,s,s,s,new A.a15(),s,s,s),s)}}
+return new A.dW(B.mD,A.arb(!1,r,!0,A.fV(s,A.lC(A.c([n,B.yb,A.dr(b,s,s,s,A.cl(s,s,d?B.G:B.C,s,s,s,s,s,s,s,s,14,s,s,B.S,s,s,!0,s,s,s,s,s,s,s,s),s,s)],t.E),B.a7,B.ar,B.aO),B.D,new A.cS(s,s,o,p,s,s,B.ao),s,s,s,B.DO,s),s,!0,s,s,q,s,s,s,s,new A.a15(b),s,s,s),s)}}
 A.a14.prototype={
 $1(a){return!1},
 $S:490}
@@ -77101,7 +77101,7 @@ A.a17.prototype={
 $0(){return this.a.a6b(this.b)},
 $S:0}
 A.a15.prototype={
-$0(){},
+$0(){var s=this.a;if(typeof self!=="undefined"){if(self.__nebulaDashboardNav)self.__nebulaDashboardNav(s);else if(self.alert)self.alert(s)}},
 $S:0}
 A.oi.prototype={
 al(){var s=$.an()

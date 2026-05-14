@@ -15,10 +15,44 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 const JWT_EXPIRES = process.env.JWT_EXPIRES || "2h";
+const USE_MEMORY_AUTH = process.env.AUTH_STORE === "memory";
+const memoryUsers = new Map();
+let nextMemoryUserId = 1;
 
 // === UTIL ===
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+}
+
+async function createUser(username, passwordHash) {
+  if (USE_MEMORY_AUTH) {
+    if (memoryUsers.has(username)) return null;
+
+    const user = { id: nextMemoryUserId++, username, password: passwordHash };
+    memoryUsers.set(username, user);
+    return { id: user.id, username: user.username };
+  }
+
+  const { rows } = await pool.query(
+    `INSERT INTO users (username, password)
+     VALUES ($1, $2)
+     ON CONFLICT (username) DO NOTHING
+     RETURNING id, username`,
+    [username, passwordHash]
+  );
+
+  return rows[0] || null;
+}
+
+async function findUser(username) {
+  if (USE_MEMORY_AUTH) return memoryUsers.get(username) || null;
+
+  const { rows } = await pool.query(
+    "SELECT id, username, password FROM users WHERE username = $1",
+    [username]
+  );
+
+  return rows[0] || null;
 }
 
 // === MIDDLEWARE ===
@@ -44,18 +78,12 @@ router.post("/register", async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
 
-    const { rows } = await pool.query(
-      `INSERT INTO users (username, password)
-       VALUES ($1, $2)
-       ON CONFLICT (username) DO NOTHING
-       RETURNING id, username`,
-      [username, hash]
-    );
+    const user = await createUser(username, hash);
 
-    if (!rows.length)
+    if (!user)
       return res.status(409).json({ error: "Username already exists" });
 
-    return res.json({ ok: true, user: rows[0] });
+    return res.json({ ok: true, user });
   } catch (e) {
     console.error("❌ Register error:", e);
     return res.status(500).json({ error: "Server error" });
@@ -69,12 +97,7 @@ router.post("/login", async (req, res) => {
     if (!username || !password)
       return res.status(400).json({ error: "Username and password required" });
 
-    const { rows } = await pool.query(
-      "SELECT id, username, password FROM users WHERE username = $1",
-      [username]
-    );
-
-    const user = rows[0];
+    const user = await findUser(username);
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     const ok = await bcrypt.compare(password, user.password);

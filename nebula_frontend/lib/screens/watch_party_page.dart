@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // ✅ added
@@ -7,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import '../config.dart';
 import '../widgets/universal_player.dart';
 
 class WatchPartyPage extends StatefulWidget {
@@ -35,7 +35,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
 
   void _connectSocket() {
     final socket = io.io(
-      'http://localhost:4000',
+      AppConfig.backendWsBase,
       io.OptionBuilder().setTransports(['websocket']).build(),
     );
     socket.onConnect((_) => setState(() => _connected = true));
@@ -61,7 +61,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       if (_isYouTube) {
         final id = _extractYT(src);
         final embed = 'https://www.youtube.com/embed/$id?autoplay=1';
-        if (!kIsWeb && Platform.isLinux) {
+        if (_isLinuxDesktop) {
           await launchUrl(Uri.parse(src), mode: LaunchMode.externalApplication);
           setState(() => _currentSource = null);
         } else {
@@ -201,7 +201,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         child: Text(_error!, style: const TextStyle(color: Colors.red)),
       );
     }
-    if (_currentSource == null && _isYouTube && Platform.isLinux) {
+    if (_currentSource == null && _isYouTube && _isLinuxDesktop) {
       return const Center(
         child: Text('YouTube opened in browser (Linux fallback).'),
       );
@@ -223,4 +223,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
     return const Center(child: Text('Pick a file or paste a link to begin.'));
   }
+
+  bool get _isLinuxDesktop =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;
 }

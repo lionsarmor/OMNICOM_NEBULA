@@ -7,7 +7,7 @@ class WatchPartySocket {
 
   void connect() {
     _socket ??= io.io(
-      kBackendWsBase,
+      AppConfig.backendWsBase,
       io.OptionBuilder()
           .setTransports(['websocket'])
           .enableAutoConnect()
