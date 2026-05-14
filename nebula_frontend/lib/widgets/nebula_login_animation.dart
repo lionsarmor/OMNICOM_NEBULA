@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// 🪐 NEBULA LOGIN ANIMATION 2.0
 /// - Green Star Wars–style laser beam from C64 to Moon PNG.
@@ -33,9 +34,10 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
   String? _lastPhase;
 
   final _moon = Image.asset('assets/images/moon.png');
-  final _c64 = Image.asset(
+  final _c64 = SvgPicture.asset(
     'assets/images/c64.svg',
-    errorBuilder: (_, __, ___) => Image.asset('assets/images/c64.svg'),
+    fit: BoxFit.contain,
+    semanticsLabel: 'Commodore 64',
   );
 
   @override
@@ -116,9 +118,9 @@ class _NebulaLoginAnimationState extends State<NebulaLoginAnimation>
 
                   // === C64 ===
                   Positioned(
-                    left: size.width * 0.14,
-                    bottom: size.height * 0.1,
-                    width: size.shortestSide * 0.25,
+                    left: size.width * 0.08,
+                    bottom: size.height * 0.12,
+                    width: size.shortestSide * 0.36,
                     child: AnimatedOpacity(
                       opacity: 1.0,
                       duration: const Duration(milliseconds: 400),
@@ -174,7 +176,7 @@ class _NebulaPainter extends CustomPainter {
       return;
     }
 
-    final compCenter = Offset(size.width * 0.28, size.height * 0.66);
+    final compCenter = Offset(size.width * 0.28, size.height * 0.8);
     final moonCenter = Offset(size.width * 0.78, size.height * 0.28);
 
     final chargeEnd = 0.2;

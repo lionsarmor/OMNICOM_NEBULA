@@ -67,7 +67,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   void _connectSocket() {
     final socket = io.io(
       AppConfig.backendWsBase,
-      io.OptionBuilder().setTransports(['websocket']).disableAutoConnect().build(),
+      io.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .build(),
     );
 
     socket.onConnect((_) {
@@ -91,7 +94,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     socket.on('wp:url', (data) => _applyRemoteState(_asMap(data)));
     socket.on('wp:play', (data) => _applyPlayback(true, _asMap(data)));
     socket.on('wp:pause', (data) => _applyPlayback(false, _asMap(data)));
-    socket.on('wp:seek', (data) => _applySeek(_seconds(_asMap(data)['position'])));
+    socket.on(
+      'wp:seek',
+      (data) => _applySeek(_seconds(_asMap(data)['position'])),
+    );
 
     socket.connect();
     _socket = socket;
@@ -183,7 +189,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
   }
 
-  bool _isYouTubeUrl(String url) => url.contains('youtu.be') || url.contains('youtube.');
+  bool _isYouTubeUrl(String url) =>
+      url.contains('youtu.be') || url.contains('youtube.');
 
   String? _extractYouTubeId(String url) {
     try {
@@ -203,7 +210,9 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       await _loadSource(url, remote: true);
     }
     _applyPlayback(state['playing'] == true, state);
-    final position = state.containsKey('position') ? _seconds(state['position']) : null;
+    final position = state.containsKey('position')
+        ? _seconds(state['position'])
+        : null;
     if (position != null) _applySeek(position);
   }
 
@@ -270,9 +279,21 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Watch Party'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: neon),
-          onPressed: () => Navigator.pop(context),
+        leadingWidth: 118,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: neon,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_rounded, size: 20),
+            label: const Text(
+              'BACK',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
         actions: [
           Padding(
@@ -344,7 +365,9 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           width: 420,
           child: TextField(
             controller: _urlCtrl,
-            decoration: const InputDecoration(labelText: 'Video URL or local path'),
+            decoration: const InputDecoration(
+              labelText: 'Video URL or local path',
+            ),
             onSubmitted: (value) => _loadSource(value, remote: false),
           ),
         ),
@@ -359,23 +382,31 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           label: const Text('Pick File'),
         ),
         ElevatedButton.icon(
-          onPressed: _currentSource == null && _sourceUrl == null ? null : _play,
+          onPressed: _currentSource == null && _sourceUrl == null
+              ? null
+              : _play,
           icon: const Icon(Icons.play_arrow),
           label: const Text('Play'),
         ),
         ElevatedButton.icon(
-          onPressed: _currentSource == null && _sourceUrl == null ? null : _pause,
+          onPressed: _currentSource == null && _sourceUrl == null
+              ? null
+              : _pause,
           icon: const Icon(Icons.pause),
           label: const Text('Pause'),
         ),
         IconButton(
           tooltip: 'Back 10 seconds',
-          onPressed: _currentSource == null && _sourceUrl == null ? null : () => _seekBy(-10),
+          onPressed: _currentSource == null && _sourceUrl == null
+              ? null
+              : () => _seekBy(-10),
           icon: const Icon(Icons.replay_10),
         ),
         IconButton(
           tooltip: 'Forward 10 seconds',
-          onPressed: _currentSource == null && _sourceUrl == null ? null : () => _seekBy(10),
+          onPressed: _currentSource == null && _sourceUrl == null
+              ? null
+              : () => _seekBy(10),
           icon: const Icon(Icons.forward_10),
         ),
       ],
@@ -393,7 +424,9 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     ),
     child: Text(
       _error ?? _status ?? '',
-      style: TextStyle(color: _error == null ? Colors.white70 : Colors.redAccent),
+      style: TextStyle(
+        color: _error == null ? Colors.white70 : Colors.redAccent,
+      ),
     ),
   );
 
@@ -424,7 +457,9 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         },
       );
     }
-    return const Center(child: Text('Create or join a room, then load a video.'));
+    return const Center(
+      child: Text('Create or join a room, then load a video.'),
+    );
   }
 
   bool get _isLinuxDesktop =>

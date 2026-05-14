@@ -40,6 +40,9 @@ dependencies:
   # Audio cues (unchanged)
   audioplayers: ^5.2.1
 
+  # SVG artwork
+  flutter_svg: ^2.0.10+1
+
   # If you still use video_player elsewhere, keep it; otherwise you can remove:
   # video_player: ^2.7.0
 
@@ -51,5 +54,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/icons/
     - assets/images/
     - assets/sfx/
