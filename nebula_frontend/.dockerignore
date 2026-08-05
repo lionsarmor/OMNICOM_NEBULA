@@ -1,0 +1,11 @@
+.dart_tool
+build
+.env
+.env.*
+.flutter-plugins
+.flutter-plugins-dependencies
+android/.gradle
+ios/Pods
+macos/Pods
+linux/flutter/ephemeral
+windows/flutter/ephemeral

@@ -28,6 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _showAnim = false;
   bool _errorMode = false;
   String? _status;
+  String? _resolvedUsername;
 
   @override
   void dispose() {
@@ -46,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final res = await ApiService.login(
         _userCtrl.text.trim(),
-        _passCtrl.text.trim(),
+        _passCtrl.text,
       );
 
       if (res.containsKey('error')) {
@@ -65,6 +66,11 @@ class _LoginPageState extends State<LoginPage> {
         await prefs.setString('token', res['token']);
 
         String username = _userCtrl.text.trim();
+        final user = res['user'];
+        if (user is Map && user['username'] is String) {
+          username = user['username'] as String;
+        }
+
         try {
           final profile = await ApiService.getProfile(res['token']);
           if (profile['username'] is String &&
@@ -78,6 +84,7 @@ class _LoginPageState extends State<LoginPage> {
           _showAnim = true;
           _errorMode = false;
           _loading = false;
+          _resolvedUsername = username;
         });
       } else {
         setState(() {
@@ -204,7 +211,8 @@ class _LoginPageState extends State<LoginPage> {
                               break;
                           }
                         },
-                        onComplete: () => _goMain(_userCtrl.text.trim()),
+                        onComplete: () =>
+                            _goMain(_resolvedUsername ?? _userCtrl.text.trim()),
                         onErrorEnd: () {
                           setState(() {
                             _showAnim = false;

@@ -1,0 +1,7 @@
+.env
+.env.*
+node_modules
+npm-debug.log*
+backend_full_dump.txt
+*_dump.txt
+coverage

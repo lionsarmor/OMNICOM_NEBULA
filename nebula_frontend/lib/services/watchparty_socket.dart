@@ -1,17 +1,22 @@
-import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../config.dart';
 
 class WatchPartySocket {
   io.Socket? _socket;
 
-  void connect() {
+  Future<void> connect() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null || token.isEmpty) return;
+
     _socket ??= io.io(
       AppConfig.backendWsBase,
-      io.OptionBuilder()
-          .setTransports(['websocket'])
-          .enableAutoConnect()
-          .build(),
+      {
+        'transports': ['websocket'],
+        'autoConnect': true,
+        'auth': {'token': token},
+      },
     );
   }
 
@@ -25,28 +30,33 @@ class WatchPartySocket {
     _socket?.off(event);
   }
 
-  void joinRoom(String roomId) {
-    connect();
+  Future<void> joinRoom(String roomId) async {
+    await connect();
     _socket?.emit('wp:join', {'roomId': roomId});
   }
 
-  void emitUrl(String roomId, String url) {
+  Future<void> emitUrl(String roomId, String url) async {
+    await connect();
     _socket?.emit('wp:url', {'roomId': roomId, 'url': url});
   }
 
-  void emitPlay(String roomId) {
+  Future<void> emitPlay(String roomId) async {
+    await connect();
     _socket?.emit('wp:play', {'roomId': roomId});
   }
 
-  void emitPause(String roomId) {
+  Future<void> emitPause(String roomId) async {
+    await connect();
     _socket?.emit('wp:pause', {'roomId': roomId});
   }
 
-  void emitSeek(String roomId, double seconds) {
+  Future<void> emitSeek(String roomId, double seconds) async {
+    await connect();
     _socket?.emit('wp:seek', {'roomId': roomId, 'position': seconds});
   }
 
-  void emitState(String roomId, Map<String, dynamic> state) {
+  Future<void> emitState(String roomId, Map<String, dynamic> state) async {
+    await connect();
     _socket?.emit('wp:state', {'roomId': roomId, 'state': state});
   }
 

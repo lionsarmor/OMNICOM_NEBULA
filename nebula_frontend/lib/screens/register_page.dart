@@ -24,7 +24,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     final username = _userCtrl.text.trim();
-    final password = _passCtrl.text.trim();
+    final password = _passCtrl.text;
 
     if (username.isEmpty || password.isEmpty) {
       setState(() => _status = "❌ Please enter both username and password.");

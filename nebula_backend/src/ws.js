@@ -1,5 +1,23 @@
-export function attachWS(io) {
+import jwt from "jsonwebtoken";
+
+export function attachWS(io, { jwtSecret }) {
   const roomState = new Map(); // roomId -> { url, playing, position, updatedAt }
+
+  io.use((socket, next) => {
+    const authToken = socket.handshake.auth?.token;
+    const header = socket.handshake.headers?.authorization || "";
+    const bearerToken = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const token = authToken || bearerToken;
+
+    if (!token) return next(new Error("unauthorized"));
+
+    try {
+      socket.data.user = jwt.verify(token, jwtSecret);
+      return next();
+    } catch {
+      return next(new Error("unauthorized"));
+    }
+  });
 
   function normalizeState(data = {}) {
     return {
@@ -10,28 +28,46 @@ export function attachWS(io) {
     };
   }
 
+  function safeId(value) {
+    return String(value || "")
+      .trim()
+      .replace(/[^\w.-]/g, "")
+      .slice(0, 80);
+  }
+
+  function safeMessage(value) {
+    return String(value || "").trim().slice(0, 2000);
+  }
+
   function emitRoomState(roomId) {
     const state = roomState.get(roomId);
     if (state) io.to(`wp_${roomId}`).emit("wp:sync", state);
   }
 
   io.on("connection", (socket) => {
-    console.log("🔌 Client connected:", socket.id);
+    console.log("Socket connected:", socket.id);
 
-    // ===== Chat System =====
-    socket.on("join_channel", (ch) => socket.join(`ch_${ch}`));
+    socket.on("join_channel", (ch) => {
+      const channelId = safeId(ch);
+      if (channelId) socket.join(`ch_${channelId}`);
+    });
 
     socket.on("send_message", (data) => {
-      io.to(`ch_${data.channelId}`).emit("receive_message", {
-        user: data.user,
-        channelId: data.channelId,
-        message: data.message,
+      const channelId = safeId(data?.channelId);
+      const message = safeMessage(data?.message);
+      if (!channelId || !message) return;
+
+      io.to(`ch_${channelId}`).emit("receive_message", {
+        user: socket.data.user?.username,
+        userId: socket.data.user?.id,
+        channelId,
+        message,
         created_at: new Date().toISOString(),
       });
     });
 
-    // ===== Watch Party =====
     socket.on("wp:join", ({ roomId }) => {
+      roomId = safeId(roomId);
       if (!roomId) return;
       socket.join(`wp_${roomId}`);
       const state = roomState.get(roomId);
@@ -39,6 +75,7 @@ export function attachWS(io) {
     });
 
     socket.on("wp:url", ({ roomId, url }) => {
+      roomId = safeId(roomId);
       if (!roomId || !url) return;
       const state = normalizeState({ url, playing: true, position: 0 });
       roomState.set(roomId, state);
@@ -46,6 +83,7 @@ export function attachWS(io) {
     });
 
     socket.on("wp:play", ({ roomId }) => {
+      roomId = safeId(roomId);
       if (!roomId) return;
       const state = { ...(roomState.get(roomId) || {}), playing: true, updatedAt: Date.now() };
       roomState.set(roomId, state);
@@ -53,6 +91,7 @@ export function attachWS(io) {
     });
 
     socket.on("wp:pause", ({ roomId }) => {
+      roomId = safeId(roomId);
       if (!roomId) return;
       const state = { ...(roomState.get(roomId) || {}), playing: false, updatedAt: Date.now() };
       roomState.set(roomId, state);
@@ -60,6 +99,7 @@ export function attachWS(io) {
     });
 
     socket.on("wp:seek", ({ roomId, position }) => {
+      roomId = safeId(roomId);
       if (!roomId) return;
       const state = {
         ...(roomState.get(roomId) || {}),
@@ -71,13 +111,14 @@ export function attachWS(io) {
     });
 
     socket.on("wp:state", ({ roomId, state }) => {
+      roomId = safeId(roomId);
       if (!roomId || !state) return;
       roomState.set(roomId, normalizeState(state));
       emitRoomState(roomId);
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Client disconnected:", socket.id);
+      console.log("Socket disconnected:", socket.id);
     });
   });
 }

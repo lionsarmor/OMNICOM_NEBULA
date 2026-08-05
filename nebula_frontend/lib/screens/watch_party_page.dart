@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -61,16 +62,28 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
 
   String _inviteFor(String roomId) {
     final base = Uri.base.origin;
-    return '$base/?room=$roomId';
+    return '$base/watchparty?room=$roomId';
   }
 
-  void _connectSocket() {
+  Future<void> _connectSocket() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _connected = false;
+        _status = 'Sign in before joining a watch room.';
+      });
+      return;
+    }
+
     final socket = io.io(
       AppConfig.backendWsBase,
-      io.OptionBuilder()
-          .setTransports(['websocket'])
-          .disableAutoConnect()
-          .build(),
+      {
+        'transports': ['websocket'],
+        'autoConnect': false,
+        'auth': {'token': token},
+      },
     );
 
     socket.onConnect((_) {
@@ -87,6 +100,14 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       setState(() {
         _connected = false;
         _status = 'Disconnected from watch relay.';
+      });
+    });
+
+    socket.on('connect_error', (data) {
+      if (!mounted) return;
+      setState(() {
+        _connected = false;
+        _status = 'Watch relay rejected the session. Sign in again.';
       });
     });
 

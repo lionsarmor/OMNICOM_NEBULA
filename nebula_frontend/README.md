@@ -1,16 +1,21 @@
-# omnicom_frontend
+# OMNICOM Nebula Frontend
 
-A new Flutter project.
+Flutter client for the OMNICOM Nebula boilerplate.
 
-## Getting Started
+The root project is Docker-first. From the repository root, run:
 
-This project is a starting point for a Flutter application.
+```bash
+./dev.sh
+```
 
-A few resources to get you started if this is your first Flutter project:
+For local Flutter development outside Docker:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run -d chrome \
+  --dart-define=BACKEND_URL=http://localhost:4400 \
+  --dart-define=API_BASE_URL=http://localhost:4400/api \
+  --dart-define=BACKEND_WS_BASE=http://localhost:4400
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The web Docker image bakes those same values into the release build.

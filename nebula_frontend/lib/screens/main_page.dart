@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/app_colors.dart';
 
@@ -23,7 +24,10 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   _MainSection _section = _MainSection.news;
 
-  void _logout(BuildContext context) {
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
@@ -288,7 +292,7 @@ class _MainPageState extends State<MainPage> {
                       IconButton(
                         tooltip: 'Log out',
                         icon: Icon(Icons.logout_rounded, color: accent),
-                        onPressed: () => _logout(context),
+                        onPressed: _logout,
                       ),
                     ],
                   ),

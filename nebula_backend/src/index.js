@@ -1,43 +1,49 @@
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
 import authRoutes from "./routes/auth.js";
-import { attachWS } from "./ws.js"; // ✅ FIXED: removed bad import
-
-dotenv.config();
+import { verifyToken } from "./routes/auth.js";
+import { listChannels, createChannel } from "./channels.js";
+import { listMessages, createMessage } from "./messages.js";
+import { config } from "./config.js";
+import { attachWS } from "./ws.js";
 
 const app = express();
 const server = createServer(app);
+const corsOptions = {
+  origin: config.corsOrigins,
+};
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(",") || ["*"],
+    origin: config.corsOrigins,
     methods: ["GET", "POST"],
   },
 });
 
-// --- Middleware ---
-app.use(express.json());
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN?.split(",") || ["*"],
-    credentials: true,
+app.use(express.json({ limit: "1mb" }));
+app.use(cors(corsOptions));
+
+app.get("/api/health", (req, res) =>
+  res.json({
+    ok: true,
+    service: "nebula-backend",
+    environment: config.nodeEnv,
+    uptime: process.uptime(),
   })
 );
 
-// --- Health Check ---
-app.get("/api/health", (req, res) => res.json({ ok: true }));
-
-// --- Auth Routes ---
 app.use("/api", authRoutes);
 
-// --- Attach WebSocket Handlers ---
-attachWS(io); // Handles both chat + Watch Party sync
+app.get("/api/channels", verifyToken, listChannels);
+app.post("/api/channels", verifyToken, createChannel);
+app.get("/api/channels/:id/messages", verifyToken, listMessages);
+app.post("/api/messages", verifyToken, createMessage);
 
-const PORT = process.env.PORT || 4400;
-server.listen(PORT, () => {
-  console.log(`🚀 OMNICOM backend running on port ${PORT}`);
+attachWS(io, { jwtSecret: config.jwtSecret });
+
+server.listen(config.port, () => {
+  console.log(`OMNICOM Nebula backend listening on port ${config.port}`);
 });

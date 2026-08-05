@@ -1,77 +1,66 @@
-version: "3.9"
-
-networks:
-  omnicom-net:
-    external: true
-
 volumes:
   nebula_pgdata:
 
 services:
-  # =============================
-  # 🐘 PostgreSQL Database
-  # =============================
   nebula-db:
-    image: postgres:17
+    image: postgres:17-alpine
     container_name: nebula-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${NEBULA_DB_USER:-nebula}
-      POSTGRES_PASSWORD: ${NEBULA_DB_PASS:-nebula123}
+      POSTGRES_PASSWORD: ${NEBULA_DB_PASS:-nebula_dev_password}
       POSTGRES_DB: ${NEBULA_DB_NAME:-nebula}
     volumes:
       - nebula_pgdata:/var/lib/postgresql/data
-      # Auto-load schema on first startup
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     ports:
       - "${PG_PORT:-5432}:5432"
-    networks:
-      - omnicom-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # =============================
-  # 🚀 Nebula Backend (Node.js)
-  # =============================
   nebula-backend:
-    build: ./nebula_backend
+    build:
+      context: ./nebula_backend
     container_name: nebula-backend
     restart: unless-stopped
     depends_on:
-      - nebula-db
+      nebula-db:
+        condition: service_healthy
     environment:
-      NODE_ENV: production
-      PORT: ${BACKEND_PORT:-4400}
-      DATABASE_URL: postgres://${NEBULA_DB_USER:-nebula}:${NEBULA_DB_PASS:-nebula123}@nebula-db:5432/${NEBULA_DB_NAME:-nebula}
-      JWT_SECRET: ${JWT_SECRET:-supersecret}
-      JWT_EXPIRES: 2h
-      CORS_ORIGIN: "*"
+      NODE_ENV: development
+      PORT: 4400
+      DATABASE_URL: postgres://${NEBULA_DB_USER:-nebula}:${NEBULA_DB_PASS:-nebula_dev_password}@nebula-db:5432/${NEBULA_DB_NAME:-nebula}
+      JWT_SECRET: ${JWT_SECRET:-replace_me_with_a_long_random_secret}
+      JWT_EXPIRES: ${JWT_EXPIRES:-2h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173}
     ports:
-      - "${BACKEND_PORT:-4400}:${BACKEND_PORT:-4400}"
-    working_dir: /app
-    command: npm run start
-    volumes:
-      - ./nebula_backend:/app
-    networks:
-      - omnicom-net
+      - "${BACKEND_PORT:-4400}:4400"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT:-4400}/api/health"]
-      interval: 20s
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4400/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  # =============================
-  # 🌐 Nebula Frontend (Flutter Web)
-  # =============================
   nebula-frontend:
+    build:
+      context: ./nebula_frontend
+      args:
+        BACKEND_URL: ${BACKEND_URL:-http://localhost:4400}
+        API_BASE_URL: ${API_BASE_URL:-http://localhost:4400/api}
+        BACKEND_WS_BASE: ${BACKEND_WS_BASE:-http://localhost:4400}
     container_name: nebula-frontend
-    image: node:20-alpine
     restart: unless-stopped
-    working_dir: /app
-    command: sh -c "npm install -g serve && serve -s build/web -l ${FRONTEND_PORT:-5173}"
-    volumes:
-      - ./nebula_frontend:/app
+    depends_on:
+      nebula-backend:
+        condition: service_healthy
     ports:
-      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
-    environment:
-      NODE_ENV: production
-    networks:
-      - omnicom-net
+      - "${FRONTEND_PORT:-5173}:80"
